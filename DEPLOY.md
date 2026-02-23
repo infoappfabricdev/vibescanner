@@ -72,10 +72,13 @@ Your code is now on GitHub.
 1. Click **Visit** (or the project URL) to open your app in the browser.
 2. You should see the VibeScan upload page. The app is live.
 
-**Note about scanning on Vercel:** The **Scan** button runs Semgrep on the server. Vercel’s servers don’t have Semgrep installed, so if someone uploads a zip and clicks Scan on the live site, they’ll see a friendly message: *“Scanning is not available on this server. Run VibeScan locally to scan your code.”* So:
+**Scanning in production:** Vercel doesn’t have Semgrep installed, so by default the live site can’t run scans. To enable scanning in production without managing a server, deploy the **scan service** and point Vercel at it:
 
-- **Local:** Run `npm run dev` and use the app on your machine to actually scan zips.
-- **Vercel:** The site is deployed and shareable; scanning is intended for local use until we add a solution (e.g. bundling Semgrep or a separate scan backend).
+1. Deploy the `scan-service/` app to **Railway** (see **scan-service/README.md** for step-by-step instructions).
+2. In your Vercel project: **Settings** → **Environment Variables** → add **`SCAN_SERVICE_URL`** with your Railway app URL (e.g. `https://your-app.up.railway.app`).
+3. Redeploy the Vercel app. After that, the **Scan** button on the live site will work.
+
+For more options (e.g. bundling Semgrep on Vercel), see **SEMGREP_PRODUCTION_OPTIONS.md**.
 
 ---
 

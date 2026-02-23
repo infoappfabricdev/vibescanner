@@ -14,6 +14,52 @@ export const dynamic = "force-dynamic";
  * Extracts the zip to a temp dir, runs Semgrep, returns raw results.
  */
 export async function POST(request: NextRequest) {
+  const scanServiceUrl = process.env.SCAN_SERVICE_URL?.trim();
+  if (scanServiceUrl) {
+    try {
+      const formData = await request.formData();
+      const file = formData.get("file");
+      if (!file || !(file instanceof File)) {
+        return NextResponse.json(
+          { error: "No file uploaded. Use form field 'file' with a zip file." },
+          { status: 400 }
+        );
+      }
+      const buf = Buffer.from(await file.arrayBuffer());
+      if (buf.length === 0) {
+        return NextResponse.json(
+          { error: "Uploaded file is empty." },
+          { status: 400 }
+        );
+      }
+      const base = scanServiceUrl.replace(/\/$/, "");
+      const forwardForm = new FormData();
+      forwardForm.append("file", new Blob([buf]), file.name || "app.zip");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 55000);
+      const res = await fetch(`${base}/scan`, {
+        method: "POST",
+        body: forwardForm,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const data = await res.json().catch(() => ({ error: "Scan service returned invalid JSON" }));
+      return NextResponse.json(data, { status: res.status });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      return NextResponse.json(
+        {
+          error: isTimeout
+            ? "Scan timed out. Try a smaller zip or try again."
+            : "Scan service unavailable. Please try again later.",
+          detail: message,
+        },
+        { status: isTimeout ? 504 : 502 }
+      );
+    }
+  }
+
   let workDir: string | null = null;
 
   try {
