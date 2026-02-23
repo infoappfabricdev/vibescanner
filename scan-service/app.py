@@ -13,6 +13,15 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB max upload
 
 
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({
+        "service": "VibeScan scan API",
+        "health": "/health",
+        "scan": "POST /scan with multipart form field 'file' (zip)",
+    })
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True})
