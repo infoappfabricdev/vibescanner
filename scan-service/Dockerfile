@@ -3,14 +3,14 @@ FROM semgrep/semgrep:latest
 
 WORKDIR /app
 
-# Add our web app and its dependencies. Base image has Python but may not have pip on PATH.
+# Install our app into a venv (base image is externally-managed, so we can't use system pip).
 COPY requirements.txt .
-RUN python3 -m ensurepip --upgrade && python3 -m pip install --no-cache-dir -r requirements.txt
+RUN python3 -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 # Railway/Fly set PORT; default 8080 for local.
 ENV PORT=8080
 EXPOSE 8080
 
-# Long timeout so large zips can be scanned.
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --timeout 300 app:app"]
+# Run gunicorn from the venv so it uses our installed packages.
+CMD ["sh", "-c", "/app/venv/bin/gunicorn --bind 0.0.0.0:${PORT:-8080} --timeout 300 app:app"]
