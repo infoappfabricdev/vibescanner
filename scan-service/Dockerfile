@@ -3,9 +3,9 @@ FROM semgrep/semgrep:latest
 
 WORKDIR /app
 
-# Add our web app and its dependencies.
+# Add our web app and its dependencies. Base image has Python but may not have pip on PATH.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python3 -m ensurepip --upgrade && python3 -m pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 # Railway/Fly set PORT; default 8080 for local.
