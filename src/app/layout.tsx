@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "VibeScan",
-  description: "Security scan your app code",
+  description: "Check if your app is safe to launch. Security scanning for AI-built apps.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }

@@ -14,8 +14,12 @@ export const dynamic = "force-dynamic";
  * Extracts the zip to a temp dir, runs Semgrep, returns raw results.
  */
 export async function POST(request: NextRequest) {
-  const scanServiceUrl = process.env.SCAN_SERVICE_URL?.trim();
+  let scanServiceUrl = process.env.SCAN_SERVICE_URL?.trim();
   if (scanServiceUrl) {
+    if (!/^https?:\/\//i.test(scanServiceUrl)) {
+      scanServiceUrl = "https://" + scanServiceUrl;
+    }
+    const base = scanServiceUrl.replace(/\/$/, "");
     try {
       const formData = await request.formData();
       const file = formData.get("file");
@@ -32,7 +36,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const base = scanServiceUrl.replace(/\/$/, "");
       const forwardForm = new FormData();
       forwardForm.append("file", new Blob([buf]), file.name || "app.zip");
       const controller = new AbortController();
