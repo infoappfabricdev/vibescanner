@@ -104,7 +104,7 @@ export default function HowItWorksPage() {
         }}
       >
         <Link
-          href="/scan"
+          href="/checkout"
           style={{
             display: "inline-block",
             padding: "0.875rem 2rem",

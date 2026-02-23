@@ -52,30 +52,15 @@ export default function Nav() {
                 href={href}
                 style={{
                   fontSize: "0.9375rem",
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 700 : 500,
                   color: isActive ? "#0f766e" : "#475569",
-                  textDecoration: "none",
+                  textDecoration: isActive ? "underline" : "none",
                 }}
               >
                 {label}
               </Link>
             );
           })}
-          <Link
-            href="/scan"
-            style={{
-              display: "inline-block",
-              padding: "0.5rem 1rem",
-              fontSize: "0.9375rem",
-              fontWeight: 600,
-              color: "white",
-              background: "#0f766e",
-              borderRadius: "6px",
-              textDecoration: "none",
-            }}
-          >
-            Run a Vibe Scan
-          </Link>
         </div>
       </div>
     </nav>

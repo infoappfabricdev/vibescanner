@@ -80,7 +80,7 @@ export default function PricingPage() {
             <li>No subscription — pay only when you scan</li>
           </ul>
           <Link
-            href="/scan"
+            href="/checkout"
             style={{
               display: "inline-block",
               padding: "0.625rem 1.25rem",
