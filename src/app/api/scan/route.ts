@@ -4,16 +4,78 @@ import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import Stripe from "stripe";
+import { verifyCouponToken } from "@/lib/coupon";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
+async function requirePaidSession(sessionId: string | null): Promise<NextResponse | null> {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) return null;
+  if (!sessionId || typeof sessionId !== "string") {
+    return NextResponse.json(
+      { error: "Payment required. Complete checkout to run a scan." },
+      { status: 403 }
+    );
+  }
+  try {
+    const stripe = new Stripe(secretKey);
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== "paid") {
+      return NextResponse.json(
+        { error: "Payment required. Complete checkout to run a scan." },
+        { status: 403 }
+      );
+    }
+    return null;
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid or expired payment session. Please pay again from the checkout page." },
+      { status: 403 }
+    );
+  }
+}
+
 /**
  * POST /api/scan
- * Body: multipart/form-data with field "file" (zip file).
- * Extracts the zip to a temp dir, runs Semgrep, returns raw results.
+ * Body: multipart/form-data with "file" (zip) and either "session_id" (Stripe) or "coupon_token".
+ * Requires a valid paid Stripe session or a valid coupon token.
  */
 export async function POST(request: NextRequest) {
+  const formData = await request.formData();
+  const couponToken = formData.get("coupon_token");
+  if (couponToken && typeof couponToken === "string") {
+    const result = verifyCouponToken(couponToken);
+    if (result.valid) {
+      // Allow scan; no Stripe required
+    } else {
+      return NextResponse.json(
+        { error: "Payment required. Complete checkout to run a scan." },
+        { status: 403 }
+      );
+    }
+  } else {
+    const sessionId = formData.get("session_id");
+    const paymentError = await requirePaidSession(sessionId as string | null);
+    if (paymentError) return paymentError;
+  }
+
+  const file = formData.get("file");
+  if (!file || !(file instanceof File)) {
+    return NextResponse.json(
+      { error: "No file uploaded. Use form field 'file' with a zip file." },
+      { status: 400 }
+    );
+  }
+  const buf = Buffer.from(await file.arrayBuffer());
+  if (buf.length === 0) {
+    return NextResponse.json(
+      { error: "Uploaded file is empty." },
+      { status: 400 }
+    );
+  }
+
   let scanServiceUrl = process.env.SCAN_SERVICE_URL?.trim();
   if (scanServiceUrl) {
     if (!/^https?:\/\//i.test(scanServiceUrl)) {
@@ -21,21 +83,6 @@ export async function POST(request: NextRequest) {
     }
     const base = scanServiceUrl.replace(/\/$/, "");
     try {
-      const formData = await request.formData();
-      const file = formData.get("file");
-      if (!file || !(file instanceof File)) {
-        return NextResponse.json(
-          { error: "No file uploaded. Use form field 'file' with a zip file." },
-          { status: 400 }
-        );
-      }
-      const buf = Buffer.from(await file.arrayBuffer());
-      if (buf.length === 0) {
-        return NextResponse.json(
-          { error: "Uploaded file is empty." },
-          { status: 400 }
-        );
-      }
       const forwardForm = new FormData();
       forwardForm.append("file", new Blob([buf]), file.name || "app.zip");
       const controller = new AbortController();
@@ -66,24 +113,6 @@ export async function POST(request: NextRequest) {
   let workDir: string | null = null;
 
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { error: "No file uploaded. Use form field 'file' with a zip file." },
-        { status: 400 }
-      );
-    }
-
-    const buf = Buffer.from(await file.arrayBuffer());
-    if (buf.length === 0) {
-      return NextResponse.json(
-        { error: "Uploaded file is empty." },
-        { status: 400 }
-      );
-    }
-
     workDir = path.join(os.tmpdir(), `vibescan-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
     await fs.mkdir(workDir, { recursive: true });
 

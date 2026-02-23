@@ -47,13 +47,13 @@ You do **not** need the Publishable key for the current flow (we use Stripe Chec
 
 ## 3. How the flow works
 
-1. User clicks **"Run a Vibe Scan — $9"** (on the nav, home, pricing, or how-it-works).
-2. They’re sent to **/checkout**. That page calls your API to create a Stripe Checkout Session ($9, one-time payment).
-3. They’re redirected to **Stripe’s hosted checkout page** to pay.
-4. After successful payment, Stripe redirects to **/scan?session_id=...**.
-5. The scan page calls **/api/verify-session** to confirm the payment. If valid, they see the upload form and can run their scan.
+1. User clicks **"Run a Vibe Scan — $9"** (on pricing, home, or how-it-works).
+2. They’re sent to **/checkout**, where they can enter an optional **coupon code** or click **Continue to payment — $9**.
+3. If a valid coupon (e.g. internal code) is applied, they’re redirected straight to **/scan** with a signed token (no Stripe).
+4. Otherwise they’re redirected to **Stripe’s hosted checkout**. After payment, Stripe sends them to **/scan?session_id=...**.
+5. The scan page verifies either the session or the coupon token. If valid, they see the upload form and can run their scan.
 
-If someone opens **/scan** without a valid `session_id` (or with an unpaid session), they see “Payment required” and a button to go to checkout.
+If someone opens **/scan** without a valid `session_id` or `coupon_token`, they’re redirected to **/checkout**.
 
 ---
 
@@ -83,5 +83,6 @@ If someone opens **/scan** without a valid `session_id` (or with an unpaid sessi
 |----------|--------|--------|
 | `STRIPE_SECRET_KEY` | Server only (.env.local, Vercel) | Create Checkout Sessions and verify payments. |
 | `NEXT_PUBLIC_APP_URL` | Build-time (Vercel) / dev | Used for Stripe `success_url` and `cancel_url` (redirect after payment or cancel). |
+| `COUPON_SECRET` | Server only (optional) | Signs coupon tokens for free-scan codes. If unset, the app falls back to `STRIPE_SECRET_KEY`. Set a dedicated secret in production if you use coupon codes. |
 
-No Stripe webhook is required for this flow; payment is confirmed by verifying the Checkout Session when the user lands on /scan.
+No Stripe webhook is required for this flow; payment is confirmed by verifying the Checkout Session when the user lands on /scan. The checkout page also supports optional coupon codes; valid codes (e.g. internal use) can bypass payment and redirect straight to /scan.

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
 
 function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
@@ -58,7 +58,9 @@ const sectionStyle = { padding: "3rem 1.5rem", maxWidth: "720px", margin: "0 aut
 
 function ScanPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const sessionId = searchParams.get("session_id");
+  const couponToken = searchParams.get("coupon_token");
   const [paymentValid, setPaymentValid] = useState<boolean | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,15 +68,28 @@ function ScanPageContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sessionId) {
-      setPaymentValid(false);
+    if (sessionId) {
+      fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+        .then((res) => res.json())
+        .then((data: { valid?: boolean }) => {
+          if (data.valid) setPaymentValid(true);
+          else router.replace("/checkout");
+        })
+        .catch(() => router.replace("/checkout"));
       return;
     }
-    fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-      .then((res) => res.json())
-      .then((data: { valid?: boolean }) => setPaymentValid(Boolean(data.valid)))
-      .catch(() => setPaymentValid(false));
-  }, [sessionId]);
+    if (couponToken) {
+      fetch(`/api/verify-coupon?token=${encodeURIComponent(couponToken)}`)
+        .then((res) => res.json())
+        .then((data: { valid?: boolean }) => {
+          if (data.valid) setPaymentValid(true);
+          else router.replace("/checkout");
+        })
+        .catch(() => router.replace("/checkout"));
+      return;
+    }
+    router.replace("/checkout");
+  }, [sessionId, couponToken, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +104,8 @@ function ScanPageContent() {
     try {
       const formData = new FormData();
       formData.set("file", file);
+      if (sessionId) formData.set("session_id", sessionId);
+      else if (couponToken) formData.set("coupon_token", couponToken);
 
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -124,36 +141,8 @@ function ScanPageContent() {
 
   if (!paymentValid) {
     return (
-      <main
-        style={{
-          ...sectionStyle,
-          paddingTop: "2.5rem",
-          paddingBottom: "4rem",
-          background: "#f8fafc",
-          minHeight: "60vh",
-        }}
-      >
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 600, margin: "0 0 0.5rem", color: "#1e293b" }}>
-          Payment required
-        </h1>
-        <p style={{ color: "#64748b", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
-          Complete payment to run your Vibe Scan. You’ll be able to upload your app and get your report right after.
-        </p>
-        <Link
-          href="/checkout"
-          style={{
-            display: "inline-block",
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            fontWeight: 600,
-            color: "white",
-            background: "#0f766e",
-            borderRadius: "8px",
-            textDecoration: "none",
-          }}
-        >
-          Run a Vibe Scan — $9
-        </Link>
+      <main style={{ ...sectionStyle, paddingTop: "2.5rem", textAlign: "center" }}>
+        <p style={{ color: "#64748b" }}>Checking…</p>
       </main>
     );
   }
