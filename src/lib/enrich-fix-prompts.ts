@@ -24,16 +24,22 @@ function buildUserPrompt(findings: ReportFinding[]): string {
 
 Below are ${findings.length} security findings. For each finding, output exactly one fix prompt string. The prompts must be in the SAME ORDER as the findings (1st prompt for 1st finding, etc.).
 
-Required format for each fix prompt (plain English, no jargon):
-"In [filename] at line [X], there is a security issue: [plain English description]. Please fix this by [specific actionable instruction]. Do not use technical jargon."
+Each fix prompt MUST use this exact structure (plain English only, no technical jargon, no preamble about how the app was built):
 
-Include the exact file name and line number from the finding. Be specific and actionable so a user can paste the string into an AI tool and get a fix.
+My app has a security issue that needs fixing:
+File: [filename]
+Line: [line number]
+Issue: [plain English description of the problem]
+Why this is dangerous: [plain English explanation of the risk]
+What to fix: [specific, actionable plain English instructions]
+
+Use the exact file name and line number from each finding. Fill in Issue, Why this is dangerous, and What to fix from the finding data. Keep all language plain English and non-technical.
 
 Findings:
 
 ${list}
 
-Respond with ONLY a valid JSON array of ${findings.length} strings — one string per finding, in order. No markdown, no explanation. Example: ["In src/auth.js at line 42, there is a security issue: ...", "In lib/db.js at line 10, there is a security issue: ..."]`;
+Respond with ONLY a valid JSON array of ${findings.length} strings — one string per finding, in order. No markdown, no explanation. Each string should be the full multi-line prompt in the format above.`;
 }
 
 function extractTextFromResponse(body: { content?: Array<{ type: string; text?: string }> }): string | null {

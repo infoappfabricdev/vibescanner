@@ -64,11 +64,30 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
       <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         <strong>What to do:</strong> {f.fixSuggestion}
       </p>
+      <p style={{ margin: "0.75rem 0 0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--text)" }}>
+        Copy this prompt into Lovable, Bolt, or Cursor:
+      </p>
+      <div
+        style={{
+          background: "#f1f5f9",
+          border: "1px solid #e2e8f0",
+          borderRadius: "8px",
+          padding: "1rem 1.25rem",
+          marginBottom: "0.75rem",
+          fontFamily: "inherit",
+          fontSize: "0.875rem",
+          lineHeight: 1.6,
+          color: "var(--text)",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}
+      >
+        {f.fixPrompt}
+      </div>
       <button
         type="button"
         onClick={handleCopy}
         style={{
-          marginTop: "0.75rem",
           padding: "0.5rem 0.75rem",
           fontSize: "0.875rem",
           fontWeight: 500,
