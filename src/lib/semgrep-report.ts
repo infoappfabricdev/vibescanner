@@ -40,6 +40,8 @@ export interface ReportFinding {
   explanation: string;
   whyItMatters: string;
   fixSuggestion: string;
+  /** Copyable prompt for pasting into Lovable, Cursor, or another AI coding tool. */
+  fixPrompt: string;
   file: string;
   line: number | null;
   severity: "high" | "medium" | "low" | "info";
@@ -115,6 +117,28 @@ function normalizeSeverity(s: string | undefined): ReportFinding["severity"] {
   return "info";
 }
 
+/** Build a copyable prompt for pasting into Lovable, Cursor, or another AI coding tool. */
+function buildFixPrompt(f: {
+  file: string;
+  line: number | null;
+  title: string;
+  explanation: string;
+  whyItMatters: string;
+  fixSuggestion: string;
+}): string {
+  const location =
+    f.line != null ? `${f.file} at line ${f.line}` : `${f.file} (see report for location)`;
+  const explanationTrimmed =
+    f.explanation.length > 400 ? f.explanation.slice(0, 397) + "..." : f.explanation;
+  return `Fix this security issue in ${location}:
+
+Issue: ${f.title}
+Explanation: ${explanationTrimmed}
+Why it matters: ${f.whyItMatters}
+
+Please fix it: ${f.fixSuggestion}`;
+}
+
 /**
  * Convert raw Semgrep API response into a list of plain-English report findings.
  */
@@ -127,14 +151,24 @@ export function buildReport(apiResponse: Record<string, unknown>): ReportFinding
     const extra = r.extra ?? {};
     const message = extra.message;
     const title = toTitle(r.check_id, message);
-    return {
+    const explanation = toExplanation(message, r.check_id);
+    const whyItMatters = toWhyItMatters(extra.severity, extra.metadata);
+    const fixSuggestion = toFixSuggestion(extra);
+    const file = r.path;
+    const line = r.start?.line ?? null;
+    const severity = normalizeSeverity(extra.severity);
+    const finding = {
       title,
-      explanation: toExplanation(message, r.check_id),
-      whyItMatters: toWhyItMatters(extra.severity, extra.metadata),
-      fixSuggestion: toFixSuggestion(extra),
-      file: r.path,
-      line: r.start?.line ?? null,
-      severity: normalizeSeverity(extra.severity),
+      explanation,
+      whyItMatters,
+      fixSuggestion,
+      file,
+      line,
+      severity,
+    };
+    return {
+      ...finding,
+      fixPrompt: buildFixPrompt(finding),
     };
   });
 }

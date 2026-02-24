@@ -8,6 +8,7 @@ import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 
 function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
+  const [copied, setCopied] = useState(false);
   const severityColors: Record<string, string> = {
     high: "var(--danger)",
     medium: "var(--warn)",
@@ -15,6 +16,16 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
     info: "var(--brand)",
   };
   const color = severityColors[f.severity] ?? "var(--text-muted)";
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(f.fixPrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
 
   return (
     <section
@@ -50,9 +61,26 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
       <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         <strong>Why it matters:</strong> {f.whyItMatters}
       </p>
-      <p style={{ margin: 0, lineHeight: 1.625, color: "var(--text)" }}>
+      <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         <strong>What to do:</strong> {f.fixSuggestion}
       </p>
+      <button
+        type="button"
+        onClick={handleCopy}
+        style={{
+          marginTop: "0.75rem",
+          padding: "0.5rem 0.75rem",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          color: "var(--brand)",
+          background: "transparent",
+          border: "1px solid var(--brand)",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        {copied ? "Copied!" : "Copy prompt for AI tool"}
+      </button>
     </section>
   );
 }
