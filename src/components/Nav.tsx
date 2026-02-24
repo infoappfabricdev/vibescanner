@@ -51,7 +51,7 @@ export default function Nav() {
               src="/brand/vibescan-logo.svg"
               alt="VibeScan"
               className="nav-logo-desktop"
-              style={{ height: "1.75rem", width: "auto", display: "block" }}
+              style={{ height: "2.5rem", width: "auto", display: "block" }}
               width={140}
               height={32}
             />
@@ -59,7 +59,7 @@ export default function Nav() {
               src="/brand/vibescan-mark.svg"
               alt="VibeScan"
               className="nav-logo-mobile"
-              style={{ height: "1.75rem", width: "auto", display: "none" }}
+              style={{ height: "2rem", width: "auto", display: "none" }}
               width={32}
               height={32}
             />
