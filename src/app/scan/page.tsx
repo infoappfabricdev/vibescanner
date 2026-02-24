@@ -159,7 +159,11 @@ function ScanPageContent() {
     }
   }
 
-  const findings: ReportFinding[] = result ? buildReport(result) : [];
+  const findings: ReportFinding[] = Array.isArray(result?.report)
+    ? (result.report as ReportFinding[])
+    : result
+      ? buildReport(result)
+      : [];
   const hasFindings = findings.length > 0;
 
   if (paymentValid === null) {

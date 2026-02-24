@@ -6,6 +6,8 @@ import path from "path";
 import os from "os";
 import Stripe from "stripe";
 import { verifyCouponToken } from "@/lib/coupon";
+import { buildReport } from "@/lib/semgrep-report";
+import { enrichFixPromptsWithClaude } from "@/lib/enrich-fix-prompts";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -94,6 +96,14 @@ export async function POST(request: NextRequest) {
       });
       clearTimeout(timeout);
       const data = await res.json().catch(() => ({ error: "Scan service returned invalid JSON" }));
+      let findings = buildReport(data as Record<string, unknown>);
+      if (findings.length > 0) {
+        const fixPrompts = await enrichFixPromptsWithClaude(findings);
+        if (fixPrompts) {
+          findings = findings.map((f, i) => ({ ...f, fixPrompt: fixPrompts[i] }));
+        }
+      }
+      (data as Record<string, unknown>).report = findings;
       return NextResponse.json(data, { status: res.status });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -158,12 +168,21 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    return NextResponse.json({
+    const response: Record<string, unknown> = {
       success: exitCode === 0 || exitCode === 1,
       exitCode,
       semgrep: results,
       stderr: stderr || undefined,
-    });
+    };
+    let findings = buildReport(response);
+    if (findings.length > 0) {
+      const fixPrompts = await enrichFixPromptsWithClaude(findings);
+      if (fixPrompts) {
+        findings = findings.map((f, i) => ({ ...f, fixPrompt: fixPrompts[i] }));
+      }
+    }
+    response.report = findings;
+    return NextResponse.json(response);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(

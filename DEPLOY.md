@@ -61,7 +61,7 @@ Your code is now on GitHub.
    - **Framework Preset:** Vercel should detect **Next.js** automatically. Leave it as is.
    - **Root Directory:** Leave blank (your app is at the repo root).
    - **Build and Output Settings:** Leave the defaults (`npm run build`, output from Next.js).
-   - You don’t need any **Environment Variables** for this app right now.
+   - **Environment Variables (optional):** To enable AI-generated fix prompts, add **`ANTHROPIC_API_KEY`** (from [Anthropic](https://console.anthropic.com/)). If you omit it, the app uses rule-based fix suggestions and scans still work.
 4. Click **Deploy**.
 5. Vercel will build and deploy. Wait 1–2 minutes. When it’s done, you’ll see **Congratulations** and a link like `https://vibescanner-xxxx.vercel.app`.
 
@@ -76,7 +76,8 @@ Your code is now on GitHub.
 
 1. Deploy the `scan-service/` app to **Railway** (see **scan-service/README.md** for step-by-step instructions).
 2. In your Vercel project: **Settings** → **Environment Variables** → add **`SCAN_SERVICE_URL`** with your Railway app URL (e.g. `https://your-app.up.railway.app`).
-3. Redeploy the Vercel app. After that, the **Scan** button on the live site will work.
+3. (Optional) Add **`ANTHROPIC_API_KEY`** to enable AI-generated fix prompts; if unset, rule-based prompts are used.
+4. Redeploy the Vercel app. After that, the **Scan** button on the live site will work.
 
 For more options (e.g. bundling Semgrep on Vercel), see **SEMGREP_PRODUCTION_OPTIONS.md**.
 

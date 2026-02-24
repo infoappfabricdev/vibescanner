@@ -44,6 +44,13 @@ npm run dev
 
 Then open **http://localhost:3000** in your browser. You can upload a zip file of your app’s code; the app will extract it, run Semgrep, and show the raw JSON results on the page.
 
+## 4. (Optional) AI-generated fix prompts
+
+To get AI-generated, plain-English fix prompts for each finding (instead of rule-based ones), set **`ANTHROPIC_API_KEY`** in your environment. Get a key from [Anthropic](https://console.anthropic.com/). If the key is missing or the API call fails, the app falls back to rule-based fix suggestions and the scan still works.
+
+- **Local:** create a `.env.local` file in the project root with `ANTHROPIC_API_KEY=your_key`.
+- **Production:** add `ANTHROPIC_API_KEY` in your host’s environment variables (e.g. Vercel → Settings → Environment Variables).
+
 ## Summary
 
 | Thing    | Why |
@@ -51,6 +58,7 @@ Then open **http://localhost:3000** in your browser. You can upload a zip file o
 | **Node.js** | Runs Next.js and the dev server. |
 | **Semgrep** | The scanner that runs on your uploaded code; the API route calls the `semgrep` command. |
 | **npm install** | Installs Next.js, React, and the zip library (adm-zip) used in the API. |
+| **ANTHROPIC_API_KEY** (optional) | Enables AI-generated fix prompts via Claude; if unset, rule-based prompts are used. |
 
 ## Deploying to Vercel later
 
