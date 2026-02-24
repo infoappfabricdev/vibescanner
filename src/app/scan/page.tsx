@@ -65,7 +65,7 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
         <strong>What to do:</strong> {f.fixSuggestion}
       </p>
       <p style={{ margin: "0.75rem 0 0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "var(--text)" }}>
-        Copy this prompt into Lovable, Bolt, or Cursor:
+        Copy this prompt into your AI coding tool:
       </p>
       <div
         style={{
