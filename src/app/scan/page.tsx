@@ -4,24 +4,27 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
+import Container from "@/components/ui/Container";
+import Card from "@/components/ui/Card";
 
 function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
-  const severityColors = {
-    high: "#c53030",
-    medium: "#c05621",
-    low: "#b7791f",
-    info: "#2b6cb0",
+  const severityColors: Record<string, string> = {
+    high: "var(--danger)",
+    medium: "var(--warn)",
+    low: "var(--warn)",
+    info: "var(--brand)",
   };
-  const color = severityColors[f.severity];
+  const color = severityColors[f.severity] ?? "var(--text-muted)";
 
   return (
     <section
       style={{
         border: `1px solid ${color}`,
-        borderRadius: "8px",
-        padding: "1rem 1.25rem",
-        marginBottom: "1rem",
-        background: "#fafafa",
+        borderRadius: "12px",
+        padding: "1.5rem 1.75rem",
+        marginBottom: "1.25rem",
+        background: "#ffffff",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
@@ -35,26 +38,26 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
         >
           {f.severity}
         </span>
-        <span style={{ color: "#666", fontSize: "0.875rem" }}>
+        <span style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
           #{index + 1} · {f.file}
           {f.line != null ? ` (line ${f.line})` : ""}
         </span>
       </div>
-      <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.125rem" }}>{f.title}</h3>
-      <p style={{ margin: "0 0 0.75rem", lineHeight: 1.5, color: "#333" }}>
+      <h3 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>{f.title}</h3>
+      <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         {f.explanation}
       </p>
-      <p style={{ margin: "0 0 0.75rem", lineHeight: 1.5 }}>
+      <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         <strong>Why it matters:</strong> {f.whyItMatters}
       </p>
-      <p style={{ margin: 0, lineHeight: 1.5 }}>
+      <p style={{ margin: 0, lineHeight: 1.625, color: "var(--text)" }}>
         <strong>What to do:</strong> {f.fixSuggestion}
       </p>
     </section>
   );
 }
 
-const sectionStyle = { padding: "3rem 1.5rem", maxWidth: "720px", margin: "0 auto" } as const;
+const sectionPadding = { paddingTop: "4rem", paddingBottom: "4rem" } as const;
 
 function ScanPageContent() {
   const searchParams = useSearchParams();
@@ -133,16 +136,20 @@ function ScanPageContent() {
 
   if (paymentValid === null) {
     return (
-      <main style={{ ...sectionStyle, paddingTop: "2.5rem", textAlign: "center" }}>
-        <p style={{ color: "#64748b" }}>Checking payment…</p>
+      <main style={{ ...sectionPadding, textAlign: "center" }}>
+        <Container>
+          <p style={{ color: "var(--text-muted)" }}>Checking payment…</p>
+        </Container>
       </main>
     );
   }
 
   if (!paymentValid) {
     return (
-      <main style={{ ...sectionStyle, paddingTop: "2.5rem", textAlign: "center" }}>
-        <p style={{ color: "#64748b" }}>Checking…</p>
+      <main style={{ ...sectionPadding, textAlign: "center" }}>
+        <Container>
+          <p style={{ color: "var(--text-muted)" }}>Checking…</p>
+        </Container>
       </main>
     );
   }
@@ -150,88 +157,96 @@ function ScanPageContent() {
   return (
     <main
       style={{
-        ...sectionStyle,
-        paddingTop: "2.5rem",
-        paddingBottom: "4rem",
-        background: "#f8fafc",
+        ...sectionPadding,
+        background: "var(--bg)",
         minHeight: "60vh",
       }}
     >
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 600, margin: "0 0 0.5rem", color: "#1e293b" }}>
-        Run your Vibe Scan
-      </h1>
-      <p style={{ color: "#64748b", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
-        Upload a zip of your app code. We’ll check it for issues and explain everything in plain English.
-      </p>
+      <Container>
+        <h1 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>
+          Run your Vibe Scan
+        </h1>
+        <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
+          Upload a zip of your app code. We’ll check it for issues and explain everything in plain English.
+        </p>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "0.75rem",
-          marginBottom: "1rem",
-        }}
-      >
-        <input
-          type="file"
-          accept=".zip"
-          onChange={(e) => {
-            setFile(e.target.files?.[0] ?? null);
-            setError(null);
-          }}
-          style={{ fontSize: "0.9375rem" }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1.25rem",
-            fontSize: "0.9375rem",
-            fontWeight: 600,
-            color: "white",
-            background: "#0f766e",
-            border: "none",
-            borderRadius: "6px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Scanning…" : "Scan"}
-        </button>
-      </form>
+        <Card style={{ marginBottom: "2rem" }}>
+          <p style={{ margin: "0 0 1.25rem", fontSize: "1rem", color: "var(--text)", lineHeight: 1.625 }}>
+            Select a .zip of your project (e.g. from Lovable, Bolt, or Cursor), then start the scan. Results usually appear within a few minutes.
+          </p>
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}
+          >
+            <input
+              type="file"
+              accept=".zip"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setError(null);
+              }}
+              style={{ fontSize: "0.9375rem" }}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "0.9375rem",
+                fontWeight: 500,
+                color: "white",
+                background: "#2563EB",
+                border: "none",
+                borderRadius: "8px",
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Scanning…" : "Run Vibe Scan"}
+            </button>
+          </form>
+          <p style={{ margin: "1rem 0 0", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+            $9 per scan. One-time charge. No subscription.
+          </p>
+        </Card>
 
-      {error && (
-        <p style={{ color: "#c53030", marginTop: "0.5rem", fontSize: "0.9375rem" }}>{error}</p>
-      )}
+        {error && (
+          <p style={{ color: "var(--danger)", marginTop: "0.5rem", fontSize: "0.9375rem" }}>{error}</p>
+        )}
 
-      {result && !error && (
-        <div style={{ marginTop: "2rem" }}>
-          {hasFindings ? (
-            <>
-              <h2 style={{ fontSize: "1.125rem", marginBottom: "0.5rem", color: "#1e293b" }}>
-                We found {findings.length} {findings.length === 1 ? "issue" : "issues"}
-              </h2>
-              <p style={{ color: "#64748b", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
-                Each one is explained below in simple terms, with why it matters and what to do next.
+        {result && !error && (
+          <div style={{ marginTop: "2rem" }}>
+            {hasFindings ? (
+              <>
+                <h2 style={{ marginBottom: "0.5rem", color: "var(--text)" }}>
+                  We found {findings.length} {findings.length === 1 ? "issue" : "issues"}
+                </h2>
+                <p style={{ color: "var(--text-muted)", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
+                  Each one is explained below in simple terms, with why it matters and what to do next.
+                </p>
+                {findings.map((f, i) => (
+                  <FindingCard key={`${f.file}-${f.line}-${i}`} f={f} index={i} />
+                ))}
+              </>
+            ) : (
+              <p style={{ fontSize: "1.0625rem", color: "var(--success)", fontWeight: 500 }}>
+                No security issues were found. Your code looks good from this scan.
               </p>
-              {findings.map((f, i) => (
-                <FindingCard key={`${f.file}-${f.line}-${i}`} f={f} index={i} />
-              ))}
-            </>
-          ) : (
-            <p style={{ fontSize: "1.0625rem", color: "#0f766e", fontWeight: 500 }}>
-              No security issues were found. Your code looks good from this scan.
-            </p>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
-      <p style={{ marginTop: "2rem", fontSize: "0.875rem", color: "#64748b" }}>
-        <Link href="/pricing" style={{ color: "#0f766e", textDecoration: "none" }}>
-          One-time scan — $9. No subscription.
-        </Link>
-      </p>
+        <p style={{ marginTop: "2rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+          <Link href="/pricing" style={{ color: "var(--brand)", textDecoration: "none" }}>
+            One-time scan — $9. No subscription.
+          </Link>
+        </p>
+      </Container>
     </main>
   );
 }
@@ -239,8 +254,10 @@ function ScanPageContent() {
 export default function ScanPage() {
   return (
     <Suspense fallback={
-      <main style={{ ...sectionStyle, paddingTop: "2.5rem", textAlign: "center" }}>
-        <p style={{ color: "#64748b" }}>Loading…</p>
+      <main style={{ ...sectionPadding, textAlign: "center" }}>
+        <Container>
+          <p style={{ color: "var(--text-muted)" }}>Loading…</p>
+        </Container>
       </main>
     }>
       <ScanPageContent />

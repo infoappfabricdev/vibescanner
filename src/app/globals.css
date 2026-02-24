@@ -1,13 +1,107 @@
 * {
   box-sizing: border-box;
 }
+
 html {
   scroll-behavior: smooth;
 }
+
+/* Design tokens – do not redefine --font-sans/--font-mono (set by next/font on html) */
+:root {
+  --brand: #2563eb;
+  --text: #0f172a;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --success: #16a34a;
+  --warn: #f59e0b;
+  --danger: #dc2626;
+  --text-muted: #64748b;
+}
+
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   margin: 0;
   padding: 0;
-  color: #1a1a1a;
-  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  font-size: 1rem;
+  line-height: 1.625;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-sans {
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Mono for code only */
+pre,
+code,
+kbd,
+samp,
+.fix-prompt,
+[class*="code"],
+[class*="mono"] {
+  font-family: var(--font-mono), ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+}
+
+/* Typography scale – modern SaaS (Stripe/Linear style) */
+h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+h4, h5, h6 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+p {
+  line-height: 1.625;
+}
+
+/* Long-form text blocks */
+.text-balance {
+  max-width: 42rem;
+}
+
+/* Nav logo: desktop vs mobile (mark) */
+.nav-logo-mobile {
+  display: none !important;
+}
+@media (max-width: 640px) {
+  .nav-logo-desktop {
+    display: none !important;
+  }
+  .nav-logo-mobile {
+    display: block !important;
+  }
+}
+
+/* Button hover (no Tailwind) */
+a.btn-primary:hover,
+button.btn-primary:hover {
+  background: #1d4ed8 !important;
+}
+a.btn-secondary:hover {
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
 }

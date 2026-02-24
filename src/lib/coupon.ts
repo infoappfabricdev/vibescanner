@@ -4,6 +4,7 @@ export const VALID_COUPON_CODES: Record<
   string,
   { bypassPayment: boolean }
 > = {
+  // To revoke DEVTEST: either remove this line (empty {} is fine) or set bypassPayment to false. Redeploy for it to take effect.
   DEVTEST: { bypassPayment: true },
 };
 
