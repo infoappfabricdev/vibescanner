@@ -1,34 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import Container from "@/components/ui/Container";
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [goingToStripe, setGoingToStripe] = useState(false);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data: { user } }) => {
+        if (!user) {
+          router.replace("/auth?next=/checkout");
+          return;
+        }
+        setAuthChecked(true);
+      });
+  }, [router]);
 
   async function handleApplyCoupon(e: React.FormEvent) {
     e.preventDefault();
     setCouponError(null);
-    const code = couponCode.trim();
+    const code = couponCode.trim().toUpperCase();
     if (!code) return;
+    setApplyingCoupon(true);
     try {
-      const res = await fetch("/api/validate-coupon", {
+      const res = await fetch("/api/grant-coupon-credit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
-      const data = (await res.json()) as { valid?: boolean; token?: string };
-      if (data.valid && data.token) {
-        window.location.href = `/scan?coupon_token=${encodeURIComponent(data.token)}`;
+      const data = (await res.json()) as { valid?: boolean; credited?: boolean };
+      if (data.valid && data.credited) {
+        window.location.href = "/scan";
         return;
       }
-      setCouponError("Invalid code.");
+      setCouponError("Invalid or already used code.");
     } catch {
       setCouponError("Something went wrong.");
+    } finally {
+      setApplyingCoupon(false);
     }
   }
 
@@ -54,6 +74,16 @@ export default function CheckoutPage() {
     setGoingToStripe(false);
   }
 
+  if (!authChecked) {
+    return (
+      <main style={{ padding: "4rem 1.5rem", textAlign: "center" }}>
+        <Container style={{ maxWidth: "480px", margin: "0 auto" }}>
+          <p style={{ color: "var(--text-muted)" }}>Checking sign-in…</p>
+        </Container>
+      </main>
+    );
+  }
+
   return (
     <main style={{ padding: "4rem 1.5rem" }}>
       <Container style={{ maxWidth: "480px", margin: "0 auto" }}>
@@ -61,7 +91,7 @@ export default function CheckoutPage() {
           Checkout
         </h1>
         <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
-          Run a one-time Vibe Scan for $9, or enter a coupon code for a free scan.
+          Run a one-time Vibe Scan for $9, or enter a coupon code for a free credit.
         </p>
 
         <form
@@ -92,6 +122,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             className="btn-primary"
+            disabled={applyingCoupon}
             style={{
               padding: "0.5rem 1rem",
               fontSize: "0.9375rem",
@@ -100,10 +131,10 @@ export default function CheckoutPage() {
               background: "#2563EB",
               border: "none",
               borderRadius: "6px",
-              cursor: "pointer",
+              cursor: applyingCoupon ? "not-allowed" : "pointer",
             }}
           >
-            Apply
+            {applyingCoupon ? "Applying…" : "Apply"}
           </button>
         </form>
         {couponError && (

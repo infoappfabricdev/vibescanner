@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
+import { createClient } from "@/lib/supabase/client";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 
@@ -110,36 +111,58 @@ function ScanPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = searchParams.get("session_id");
-  const couponToken = searchParams.get("coupon_token");
-  const [paymentValid, setPaymentValid] = useState<boolean | null>(null);
+  const [ready, setReady] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creditsChecked, setCreditsChecked] = useState(false);
 
   useEffect(() => {
-    if (sessionId) {
-      fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-        .then((res) => res.json())
-        .then((data: { valid?: boolean }) => {
-          if (data.valid) setPaymentValid(true);
-          else router.replace("/checkout");
-        })
-        .catch(() => router.replace("/checkout"));
-      return;
+    let cancelled = false;
+
+    async function init() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/auth?next=/scan");
+        return;
+      }
+
+      if (sessionId) {
+        const res = await fetch("/api/credit-from-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        if (res.ok) {
+          if (typeof window !== "undefined" && window.history.replaceState) {
+            window.history.replaceState({}, "", "/scan");
+          }
+        }
+      }
+
+      const credRes = await fetch("/api/credits");
+      if (cancelled) return;
+      if (credRes.status === 401) {
+        router.replace("/auth?next=/scan");
+        return;
+      }
+      const credData = (await credRes.json()) as { credits?: number };
+      const credits = credData.credits ?? 0;
+      setCreditsChecked(true);
+      if (credits === 0) {
+        router.replace("/pricing");
+        return;
+      }
+      setReady(true);
     }
-    if (couponToken) {
-      fetch(`/api/verify-coupon?token=${encodeURIComponent(couponToken)}`)
-        .then((res) => res.json())
-        .then((data: { valid?: boolean }) => {
-          if (data.valid) setPaymentValid(true);
-          else router.replace("/checkout");
-        })
-        .catch(() => router.replace("/checkout"));
-      return;
-    }
-    router.replace("/checkout");
-  }, [sessionId, couponToken, router]);
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -154,8 +177,6 @@ function ScanPageContent() {
     try {
       const formData = new FormData();
       formData.set("file", file);
-      if (sessionId) formData.set("session_id", sessionId);
-      else if (couponToken) formData.set("coupon_token", couponToken);
 
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -185,21 +206,11 @@ function ScanPageContent() {
       : [];
   const hasFindings = findings.length > 0;
 
-  if (paymentValid === null) {
+  if (!creditsChecked || !ready) {
     return (
       <main style={{ ...sectionPadding, textAlign: "center" }}>
         <Container>
-          <p style={{ color: "var(--text-muted)" }}>Checking payment…</p>
-        </Container>
-      </main>
-    );
-  }
-
-  if (!paymentValid) {
-    return (
-      <main style={{ ...sectionPadding, textAlign: "center" }}>
-        <Container>
-          <p style={{ color: "var(--text-muted)" }}>Checking…</p>
+          <p style={{ color: "var(--text-muted)" }}>Checking credits…</p>
         </Container>
       </main>
     );
@@ -218,7 +229,7 @@ function ScanPageContent() {
           Run your Vibe Scan
         </h1>
         <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
-          Upload a zip of your app code. We’ll check it for issues and explain everything in plain English.
+          Upload a zip of your app code. We’ll check it for issues and explain everything in plain English. One credit will be used.
         </p>
 
         <Card style={{ marginBottom: "2rem" }}>
@@ -262,7 +273,9 @@ function ScanPageContent() {
             </button>
           </form>
           <p style={{ margin: "1rem 0 0", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-            $9 per scan. One-time charge. No subscription.
+            <Link href="/dashboard" style={{ color: "var(--brand)", textDecoration: "none" }}>Dashboard</Link>
+            {" · "}
+            <Link href="/pricing" style={{ color: "var(--brand)", textDecoration: "none" }}>Get more credits</Link>
           </p>
         </Card>
 
@@ -293,8 +306,8 @@ function ScanPageContent() {
         )}
 
         <p style={{ marginTop: "2rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-          <Link href="/pricing" style={{ color: "var(--brand)", textDecoration: "none" }}>
-            One-time scan — $9. No subscription.
+          <Link href="/dashboard" style={{ color: "var(--brand)", textDecoration: "none" }}>
+            View all scans in dashboard
           </Link>
         </p>
       </Container>

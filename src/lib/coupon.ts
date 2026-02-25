@@ -2,10 +2,10 @@ import crypto from "crypto";
 
 export const VALID_COUPON_CODES: Record<
   string,
-  { bypassPayment: boolean }
+  { bypassPayment?: boolean; grantCredit?: boolean }
 > = {
-  // To revoke DEVTEST: either remove this line (empty {} is fine) or set bypassPayment to false. Redeploy for it to take effect.
-  DEVTEST: { bypassPayment: true },
+  // DEVTEST: grants 1 free credit when user is logged in (no payment bypass).
+  DEVTEST: { grantCredit: true },
 };
 
 function getSecret(): string | undefined {
@@ -68,6 +68,11 @@ export function verifyCouponToken(token: string): { valid: boolean; code?: strin
   const entry = VALID_COUPON_CODES[code];
   if (!entry?.bypassPayment) return { valid: false };
   return { valid: true, code };
+}
+
+export function isCodeValidForGrantCredit(code: string): boolean {
+  const entry = VALID_COUPON_CODES[code];
+  return Boolean(entry?.grantCredit);
 }
 
 export function isCodeValidForBypass(code: string): boolean {

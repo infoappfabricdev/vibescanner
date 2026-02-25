@@ -4,65 +4,64 @@ import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
-import Stripe from "stripe";
-import { verifyCouponToken } from "@/lib/coupon";
-import { buildReport } from "@/lib/semgrep-report";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
 import { enrichFixPromptsWithClaude } from "@/lib/enrich-fix-prompts";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-async function requirePaidSession(sessionId: string | null): Promise<NextResponse | null> {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) return null;
-  if (!sessionId || typeof sessionId !== "string") {
-    return NextResponse.json(
-      { error: "Payment required. Complete checkout to run a scan." },
-      { status: 403 }
-    );
+function countSeverities(findings: ReportFinding[]) {
+  let high = 0;
+  let medium = 0;
+  let low = 0;
+  for (const f of findings) {
+    if (f.severity === "high") high++;
+    else if (f.severity === "medium") medium++;
+    else low++;
   }
-  try {
-    const stripe = new Stripe(secretKey);
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== "paid") {
-      return NextResponse.json(
-        { error: "Payment required. Complete checkout to run a scan." },
-        { status: 403 }
-      );
-    }
-    return null;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid or expired payment session. Please pay again from the checkout page." },
-      { status: 403 }
-    );
-  }
+  return { high, medium, low };
 }
 
 /**
  * POST /api/scan
- * Body: multipart/form-data with "file" (zip) and either "session_id" (Stripe) or "coupon_token".
- * Requires a valid paid Stripe session or a valid coupon token.
+ * Body: multipart/form-data with "file" (zip).
+ * Requires auth. Deducts 1 credit, runs scan, saves report to scans table.
  */
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const couponToken = formData.get("coupon_token");
-  if (couponToken && typeof couponToken === "string") {
-    const result = verifyCouponToken(couponToken);
-    if (result.valid) {
-      // Allow scan; no Stripe required
-    } else {
-      return NextResponse.json(
-        { error: "Payment required. Complete checkout to run a scan." },
-        { status: 403 }
-      );
-    }
-  } else {
-    const sessionId = formData.get("session_id");
-    const paymentError = await requirePaidSession(sessionId as string | null);
-    if (paymentError) return paymentError;
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Sign in to run a scan." }, { status: 401 });
   }
 
+  const admin = createAdminClient();
+  const { data: creditsRow } = await admin
+    .from("scan_credits")
+    .select("credits_remaining")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const credits = creditsRow?.credits_remaining ?? 0;
+  if (credits < 1) {
+    return NextResponse.json(
+      { error: "No credits remaining. Get more credits to run a scan." },
+      { status: 403 }
+    );
+  }
+
+  await admin
+    .from("scan_credits")
+    .update({
+      credits_remaining: credits - 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  const formData = await request.formData();
   const file = formData.get("file");
   if (!file || !(file instanceof File)) {
     return NextResponse.json(
@@ -104,6 +103,15 @@ export async function POST(request: NextRequest) {
         }
       }
       (data as Record<string, unknown>).report = findings;
+      const { high, medium, low } = countSeverities(findings);
+      await admin.from("scans").insert({
+        user_id: user.id,
+        findings: findings as unknown as Record<string, unknown>[],
+        finding_count: findings.length,
+        high_count: high,
+        medium_count: medium,
+        low_count: low,
+      });
       return NextResponse.json(data, { status: res.status });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -182,6 +190,15 @@ export async function POST(request: NextRequest) {
       }
     }
     response.report = findings;
+    const { high, medium, low } = countSeverities(findings);
+    await admin.from("scans").insert({
+      user_id: user.id,
+      findings: findings as unknown as Record<string, unknown>[],
+      finding_count: findings.length,
+      high_count: high,
+      medium_count: medium,
+      low_count: low,
+    });
     return NextResponse.json(response);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

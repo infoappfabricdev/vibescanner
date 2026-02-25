@@ -1,7 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import Container from "@/components/ui/Container";
 import { ButtonPrimary } from "@/components/ui/Button";
 
@@ -14,6 +17,28 @@ const navLinks = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data: { user: u } }) => {
+        setUser(u ?? null);
+        setLoading(false);
+      });
+    const { data: { subscription } } = createClient().auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleSignOut() {
+    await createClient().auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <header
@@ -82,9 +107,60 @@ export default function Nav() {
                 </Link>
               );
             })}
-            <span style={{ marginLeft: "0.5rem" }}>
-              <ButtonPrimary href="/checkout">Run a Vibe Scan</ButtonPrimary>
-            </span>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      style={{
+                        fontSize: "0.9375rem",
+                        fontWeight: pathname?.startsWith("/dashboard") ? 600 : 500,
+                        color: pathname?.startsWith("/dashboard") ? "var(--brand)" : "var(--text-muted)",
+                        textDecoration: pathname?.startsWith("/dashboard") ? "underline" : "none",
+                      }}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      style={{
+                        fontSize: "0.9375rem",
+                        fontWeight: 500,
+                        color: "var(--text-muted)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      Sign out
+                    </button>
+                    <span style={{ marginLeft: "0.5rem" }}>
+                      <ButtonPrimary href="/scan">Run a Vibe Scan</ButtonPrimary>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth"
+                      style={{
+                        fontSize: "0.9375rem",
+                        fontWeight: 500,
+                        color: "var(--text-muted)",
+                        textDecoration: "none",
+                      }}
+                    >
+                      Sign in
+                    </Link>
+                    <span style={{ marginLeft: "0.5rem" }}>
+                      <ButtonPrimary href="/checkout">Run a Vibe Scan</ButtonPrimary>
+                    </span>
+                  </>
+                )}
+              </>
+            )}
           </nav>
         </div>
       </Container>

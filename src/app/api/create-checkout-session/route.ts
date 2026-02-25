@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(_request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "Sign in to purchase a scan." }, { status: 401 });
+  }
+
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     return NextResponse.json(
@@ -16,6 +26,8 @@ export async function POST(_request: NextRequest) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      client_reference_id: user.id,
+      metadata: { user_id: user.id },
       line_items: [
         {
           price_data: {
