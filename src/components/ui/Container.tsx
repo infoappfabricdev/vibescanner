@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode } from "react";
 
-const maxWidth = "1160px";
+const maxWidth = "1120px";
 
 export default function Container({
   children,

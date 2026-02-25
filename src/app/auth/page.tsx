@@ -15,7 +15,8 @@ const baseUrl =
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
+  const [passwordEmail, setPasswordEmail] = useState("");
   const [password, setPassword] = useState("");
   const [magicSent, setMagicSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,13 +43,13 @@ export default function AuthPage() {
     e.preventDefault();
     setError(null);
     setMessage(null);
-    if (!email.trim()) {
+    if (!magicLinkEmail.trim()) {
       setError("Enter your email.");
       return;
     }
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: magicLinkEmail.trim(),
       options: { emailRedirectTo: `${baseUrl}/auth/callback` },
     });
     setLoading(false);
@@ -63,14 +64,14 @@ export default function AuthPage() {
   async function handleEmailPassword(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !password) {
+    if (!passwordEmail.trim() || !password) {
       setError("Enter email and password.");
       return;
     }
     setLoading(true);
     if (mode === "signup") {
       const { error: err } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: passwordEmail.trim(),
         password,
         options: { emailRedirectTo: `${baseUrl}/auth/callback` },
       });
@@ -79,11 +80,11 @@ export default function AuthPage() {
         setError(err.message);
         return;
       }
-      setMessage("Check your email to confirm your account, then sign in.");
+      setMessage("Account created. You can sign in now.");
       return;
     }
     const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: passwordEmail.trim(),
       password,
     });
     setLoading(false);
@@ -161,8 +162,8 @@ export default function AuthPage() {
               <input
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={magicLinkEmail}
+                onChange={(e) => setMagicLinkEmail(e.target.value)}
                 style={{
                   padding: "0.5rem 0.75rem",
                   fontSize: "1rem",
@@ -198,8 +199,8 @@ export default function AuthPage() {
             <input
               type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={passwordEmail}
+              onChange={(e) => setPasswordEmail(e.target.value)}
               style={{
                 padding: "0.5rem 0.75rem",
                 fontSize: "1rem",

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import Container from "@/components/ui/Container";
-import { ButtonPrimary } from "@/components/ui/Button";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -51,7 +49,7 @@ export default function Nav() {
         zIndex: 50,
       }}
     >
-      <Container>
+      <div className="nav-container">
         <div
           style={{
             display: "flex",
@@ -137,9 +135,6 @@ export default function Nav() {
                     >
                       Sign out
                     </button>
-                    <span style={{ marginLeft: "0.5rem" }}>
-                      <ButtonPrimary href="/scan">Run a Vibe Scan</ButtonPrimary>
-                    </span>
                   </>
                 ) : (
                   <>
@@ -154,16 +149,13 @@ export default function Nav() {
                     >
                       Sign in
                     </Link>
-                    <span style={{ marginLeft: "0.5rem" }}>
-                      <ButtonPrimary href="/checkout">Run a Vibe Scan</ButtonPrimary>
-                    </span>
                   </>
                 )}
               </>
             )}
           </nav>
         </div>
-      </Container>
+      </div>
     </header>
   );
 }

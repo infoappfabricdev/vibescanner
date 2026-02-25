@@ -36,6 +36,8 @@ export interface SemgrepOutput {
 
 /** One finding in our plain-English report. */
 export interface ReportFinding {
+  /** Semgrep rule check_id (e.g. "python.lang.security.audit.insecure-transport"). */
+  checkId: string;
   title: string;
   explanation: string;
   whyItMatters: string;
@@ -150,14 +152,16 @@ export function buildReport(apiResponse: Record<string, unknown>): ReportFinding
   return results.map((r: SemgrepResult) => {
     const extra = r.extra ?? {};
     const message = extra.message;
-    const title = toTitle(r.check_id, message);
-    const explanation = toExplanation(message, r.check_id);
+    const checkId = r.check_id ?? "";
+    const title = toTitle(checkId, message);
+    const explanation = toExplanation(message, checkId);
     const whyItMatters = toWhyItMatters(extra.severity, extra.metadata);
     const fixSuggestion = toFixSuggestion(extra);
     const file = r.path;
     const line = r.start?.line ?? null;
     const severity = normalizeSeverity(extra.severity);
     const finding = {
+      checkId,
       title,
       explanation,
       whyItMatters,

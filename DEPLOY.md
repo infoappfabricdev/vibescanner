@@ -83,6 +83,20 @@ For more options (e.g. bundling Semgrep on Vercel), see **SEMGREP_PRODUCTION_OPT
 
 ---
 
+## Step 5b: (Optional) Stripe webhook for credits
+
+When a user pays, credits are added when they open the scan page. To add the credit **as soon as they pay** (even if they never open the scan page), set up a Stripe webhook:
+
+1. In **Stripe Dashboard** → **Developers** → **Webhooks** → **Add endpoint**.
+2. **Endpoint URL:** `https://vibescan.co/api/webhooks/stripe` (or your production URL).
+3. **Events to send:** Select **checkout.session.completed**.
+4. Click **Add endpoint**. On the new endpoint page, click **Reveal** under **Signing secret** and copy the value (starts with `whsec_`).
+5. In **Vercel** → your project → **Settings** → **Environment Variables**, add **`STRIPE_WEBHOOK_SECRET`** with that value. Redeploy so the new env var is available.
+
+The app will then grant 1 credit as soon as Stripe confirms payment. The scan page still works without the webhook (it credits on first visit with `session_id`); the webhook just makes credits appear immediately.
+
+---
+
 ## Step 6: (Optional) Use a custom domain
 
 1. In the Vercel project, go to **Settings** → **Domains**.

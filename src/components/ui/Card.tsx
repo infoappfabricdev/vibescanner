@@ -3,12 +3,15 @@ import { type ReactNode } from "react";
 export default function Card({
   children,
   style = {},
+  className,
 }: {
   children: ReactNode;
   style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
     <div
+      className={className}
       style={{
         background: "#ffffff",
         border: "1px solid #e5e7eb",
