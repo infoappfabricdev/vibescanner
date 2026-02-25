@@ -1,7 +1,6 @@
 /**
- * Call Anthropic Claude once with all findings and get back a JSON array of
- * plain-English fix prompts (one per finding, same order). Returns null on
- * any failure so the caller can keep rule-based prompts.
+ * @deprecated Use enrichFindingsOnce from enrich-findings-once.ts instead.
+ * LLM runs once per scan there; this file is no longer used.
  */
 
 import type { ReportFinding } from "./semgrep-report";

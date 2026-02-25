@@ -3,8 +3,8 @@
  * Prefer curated mapping by rule id; fallback to heuristic from full explanation.
  */
 
-/** Curated plain-English summaries by rule id (full or suffix match). Best quality. */
-const SUMMARY_BY_RULE: Record<string, string> = {
+/** Curated plain-English summaries by rule id (full or suffix match). Best quality. Used at scan time only; dashboard never calls LLM. */
+export const RULE_SUMMARIES: Record<string, string> = {
   "insecure-transport": "Your app may be sending or receiving data over an unencrypted connection. Use HTTPS to keep data private.",
   "insecure-transport.insecure-transport": "Your app may be sending or receiving data over an unencrypted connection. Use HTTPS to keep data private.",
   "hardcoded-secret": "A secret (like a password or API key) is stored directly in the code. Move it to environment variables or a secrets manager.",
@@ -28,14 +28,15 @@ const SUMMARY_BY_RULE: Record<string, string> = {
 
 /**
  * Try to get a curated summary by rule id. Supports full check_id or last segment (e.g. "insecure-transport").
+ * Exported for scan-time enrichment (LLM runs once per scan; dashboard never calls LLM).
  */
-function getCuratedSummary(checkId: string): string | null {
+export function getCuratedSummary(checkId: string): string | null {
   if (!checkId || !checkId.trim()) return null;
   const normalized = checkId.trim().toLowerCase();
-  if (SUMMARY_BY_RULE[normalized]) return SUMMARY_BY_RULE[normalized];
+  if (RULE_SUMMARIES[normalized]) return RULE_SUMMARIES[normalized];
   const suffix = normalized.split(".").pop() ?? normalized;
-  if (SUMMARY_BY_RULE[suffix]) return SUMMARY_BY_RULE[suffix];
-  for (const [key, value] of Object.entries(SUMMARY_BY_RULE)) {
+  if (RULE_SUMMARIES[suffix]) return RULE_SUMMARIES[suffix];
+  for (const [key, value] of Object.entries(RULE_SUMMARIES)) {
     if (normalized.includes(key) || suffix.includes(key)) return value;
   }
   return null;

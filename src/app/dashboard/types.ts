@@ -1,6 +1,14 @@
 import type { ReportFinding } from "@/lib/semgrep-report";
 import { getSummaryText } from "@/lib/finding-summary";
 
+/** Stored finding from DB (has summaryText, detailsText, generatedBy, generatedAt). Dashboard uses these only; no LLM. */
+export type StoredFinding = ReportFinding & {
+  summaryText?: string;
+  detailsText?: string;
+  generatedBy?: string;
+  generatedAt?: string;
+};
+
 /** Normalized finding shape for dashboard (supports multiple scanners). */
 export type NormalizedFinding = {
   id: string;
@@ -52,12 +60,14 @@ Apply the fix directly in code.`;
 }
 
 /**
- * Map report findings from a scan to normalized findings with stable ids.
+ * Map stored findings from DB to normalized shape for the dashboard.
+ * Uses stored summaryText/detailsText only; no generation, no LLM.
+ * For legacy scans without stored fields, falls back to getSummaryText (client-safe heuristic).
  */
 export function mapReportFindingsToNormalized(
   scanId: string,
   detailsUrl: string,
-  reportFindings: ReportFinding[]
+  reportFindings: StoredFinding[]
 ): NormalizedFinding[] {
   return reportFindings.map((f, idx) => {
     const severity = SEVERITY_MAP[f.severity] ?? "low";
@@ -67,8 +77,11 @@ export function mapReportFindingsToNormalized(
       line: f.line,
       severity,
     });
-    const detailsText = f.explanation ?? "";
-    const summaryText = getSummaryText(f.checkId ?? null, detailsText);
+    const detailsText = f.detailsText ?? f.explanation ?? "";
+    const summaryText =
+      f.summaryText != null && f.summaryText !== ""
+        ? f.summaryText
+        : getSummaryText(f.checkId ?? null, detailsText);
     return {
       id: `semgrep-${scanId}-${idx}`,
       scanner: "semgrep",

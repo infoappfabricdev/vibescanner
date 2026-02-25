@@ -1,3 +1,4 @@
+import React from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -6,8 +7,7 @@ import Card from "@/components/ui/Card";
 import { ButtonPrimary, ButtonSecondary } from "@/components/ui/Button";
 import DashboardClient from "./DashboardClient";
 import TopIssuesSection from "./TopIssuesSection";
-import { mapReportFindingsToNormalized } from "./types";
-import type { ReportFinding } from "@/lib/semgrep-report";
+import { mapReportFindingsToNormalized, type StoredFinding } from "./types";
 
 type ScanRow = {
   id: string;
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
         : "No issues detected. Your app looks safe to launch.";
 
   const lastScanReportHref = lastScan ? "/dashboard/scans/" + lastScan.id : "";
-  const buttonGroupStyle = { display: "flex", gap: "0.75rem", flexWrap: "wrap" };
+  const buttonGroupStyle: React.CSSProperties = { display: "flex", gap: "0.75rem", flexWrap: "wrap" };
   const hasCredits = credits > 0;
   const scanOrPricingHref = hasCredits ? "/scan" : "/pricing";
 
@@ -119,7 +119,8 @@ export default async function DashboardPage() {
       ? 100
       : securityScore(lastScan.high_count, lastScan.medium_count, lastScan.low_count);
   const scoreStatusResult = scoreStatus(score);
-  const lastScanFindings = (lastScan?.findings ?? []) as ReportFinding[];
+  // Dashboard uses stored fields only; no LLM, no generation (see enrich-findings-once.ts).
+  const lastScanFindings = (lastScan?.findings ?? []) as StoredFinding[];
   const normalizedFindings =
     lastScan && lastScanReportHref
       ? mapReportFindingsToNormalized(lastScan.id, lastScanReportHref, lastScanFindings)

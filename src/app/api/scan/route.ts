@@ -7,7 +7,7 @@ import os from "os";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
-import { enrichFixPromptsWithClaude } from "@/lib/enrich-fix-prompts";
+import { enrichFindingsOnce } from "@/lib/enrich-findings-once";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -96,11 +96,9 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
       const data = await res.json().catch(() => ({ error: "Scan service returned invalid JSON" }));
       let findings = buildReport(data as Record<string, unknown>);
+      // LLM runs once per scan; dashboard never calls LLM. Enrich and persist here.
       if (findings.length > 0) {
-        const fixPrompts = await enrichFixPromptsWithClaude(findings);
-        if (fixPrompts) {
-          findings = findings.map((f, i) => ({ ...f, fixPrompt: fixPrompts[i] }));
-        }
+        findings = await enrichFindingsOnce(findings);
       }
       (data as Record<string, unknown>).report = findings;
       const { high, medium, low } = countSeverities(findings);
@@ -183,11 +181,9 @@ export async function POST(request: NextRequest) {
       stderr: stderr || undefined,
     };
     let findings = buildReport(response);
+    // LLM runs once per scan; dashboard never calls LLM. Enrich and persist here.
     if (findings.length > 0) {
-      const fixPrompts = await enrichFixPromptsWithClaude(findings);
-      if (fixPrompts) {
-        findings = findings.map((f, i) => ({ ...f, fixPrompt: fixPrompts[i] }));
-      }
+      findings = await enrichFindingsOnce(findings);
     }
     response.report = findings;
     const { high, medium, low } = countSeverities(findings);
