@@ -60,9 +60,6 @@ export default function PricingPage() {
             <h2 style={{ fontSize: "1.125rem", fontWeight: 600, margin: "0 0 0.75rem", color: "var(--text)" }}>
               One-time scan
             </h2>
-            <p style={{ fontSize: "0.9375rem", color: "var(--text)", margin: "0 0 1rem", lineHeight: 1.6 }}>
-              Run a security scan whenever you need it. Upload a zip of your app, get a plain-English report with findings and fix suggestions. No subscription, no recurring charge.
-            </p>
             <ul
               style={{
                 margin: "0 0 1rem",
@@ -74,25 +71,24 @@ export default function PricingPage() {
             >
               <li>One-time payment</li>
               <li>Plain-English report with what we found, why it matters, and what to do</li>
-              <li>Fix suggestions you can copy into your AI tool or share with a developer</li>
+              <li>Fix suggestions you can copy/paste into your AI tool or share with a developer</li>
               <li>No subscription — pay only when you scan</li>
             </ul>
             <ButtonPrimary href="/checkout">Run a Vibe Scan — $9</ButtonPrimary>
           </div>
 
-          {/* Coming soon: subscription */}
+          {/* Subscription — coming soon (secondary) */}
           <div
             style={{
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--border)",
               borderRadius: "12px",
-              padding: "2rem",
-              background: "#ffffff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+              padding: "1.5rem 2rem",
+              background: "var(--bg)",
+              opacity: 0.9,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <span style={{ fontSize: "1.75rem", fontWeight: 600, color: "var(--text-muted)" }}>$29</span>
-              <span style={{ fontSize: "1rem", color: "var(--text-muted)" }}>/month</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+              <span style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--text-muted)" }}>Subscription</span>
               <span
                 style={{
                   fontSize: "0.75rem",
@@ -101,17 +97,13 @@ export default function PricingPage() {
                   background: "var(--border)",
                   padding: "0.2rem 0.5rem",
                   borderRadius: "4px",
-                  marginLeft: "0.5rem",
                 }}
               >
                 Coming soon
               </span>
             </div>
-            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, margin: "0 0 0.75rem", color: "var(--text-muted)" }}>
-              Subscription
-            </h2>
-            <p style={{ fontSize: "0.9375rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Unlimited scans and more features. We're building this next — stay tuned.
+            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+              Unlimited scans and more features. We&apos;re building this next — stay tuned.
             </p>
           </div>
           </div>

@@ -1,24 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import { ButtonPrimary, ButtonSecondary } from "@/components/ui/Button";
 
 const sectionPadding = { paddingTop: "4rem", paddingBottom: "4rem" } as const;
-const stepNumStyle = {
-  width: "2rem",
-  height: "2rem",
-  borderRadius: "50%",
-  background: "var(--brand)",
-  color: "white",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 600,
-  fontSize: "0.875rem",
-  marginRight: "0.75rem",
-} as const;
 
 export default function Home() {
   return (
@@ -44,7 +30,7 @@ export default function Home() {
                 lineHeight: 1.625,
               }}
             >
-              Security checks for AI-built apps — with fixes you can copy and paste.
+              Find security issues before your users do — with fixes you can copy and paste.
             </p>
             <p
               style={{
@@ -55,57 +41,58 @@ export default function Home() {
                 opacity: 0.9,
               }}
             >
-              Currently scans source code for common security issues.
+              Built for AI-generated apps, indie hackers, and fast-moving teams.
             </p>
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap", marginTop: "2.5rem" }}>
-              <ButtonPrimary href="/checkout">Run a Vibe Scan</ButtonPrimary>
-              <ButtonSecondary href="/pricing">See pricing</ButtonSecondary>
+              <ButtonPrimary href="/checkout">Run a Vibe Scan — $9</ButtonPrimary>
+              <ButtonSecondary href="/how-it-works">See how it works</ButtonSecondary>
             </div>
           </div>
         </Container>
       </section>
 
-      {/* How it works (3 steps) */}
+      {/* Why VibeScan */}
       <section style={{ ...sectionPadding, borderTop: "1px solid #E2E8F0" }}>
         <Container>
-          <div style={{ maxWidth: "42rem", margin: "0 auto", textAlign: "left" }}>
-            <h2 style={{ margin: "0 0 2rem", color: "var(--text)" }}>
-              How it works
-            </h2>
-            <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            <li style={{ display: "flex", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <span style={stepNumStyle}>1</span>
-              <div>
-                <strong style={{ display: "block", marginBottom: "0.25rem" }}>Upload your app</strong>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.9375rem" }}>
-                  Zip your project (e.g. from Lovable, Bolt, or Cursor) and upload it.
-                </span>
-              </div>
-            </li>
-            <li style={{ display: "flex", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <span style={stepNumStyle}>2</span>
-              <div>
-                <strong style={{ display: "block", marginBottom: "0.25rem" }}>We scan your code for security risks</strong>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.9375rem" }}>
-                  VibeScan analyzes your code for common patterns that could lead to security vulnerabilities.
-                </span>
-              </div>
-            </li>
-            <li style={{ display: "flex", alignItems: "flex-start" }}>
-              <span style={stepNumStyle}>3</span>
-              <div>
-                <strong style={{ display: "block", marginBottom: "0.25rem" }}>Get a clear report + fixes</strong>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.9375rem" }}>
-                  See what’s wrong, why it matters, and how to fix it — in plain English.
-                </span>
-              </div>
-            </li>
-          </ol>
+          <h2 style={{ margin: "0 0 2rem", color: "var(--text)", textAlign: "center" }}>
+            Most security tools tell you what&apos;s wrong. VibeScan tells you how to fix it.
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: "2rem",
+            }}
+          >
+            <div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.0625rem", fontWeight: 600, color: "var(--text)" }}>
+                Plain English, not jargon
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                No security expertise required. We explain each issue in simple terms.
+              </p>
+            </div>
+            <div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.0625rem", fontWeight: 600, color: "var(--text)" }}>
+                Fixes you can use immediately
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                Get copy-paste prompts you can use with your AI coding tool or share with a developer.
+              </p>
+            </div>
+            <div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.0625rem", fontWeight: 600, color: "var(--text)" }}>
+                Fast results
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+                Upload your app and get a full report in minutes.
+              </p>
+            </div>
           </div>
         </Container>
       </section>
 
-      {/* Example report teaser */}
+      {/* Why VibeScan is different */}
       <section
         style={{
           ...sectionPadding,
@@ -114,56 +101,116 @@ export default function Home() {
         }}
       >
         <Container>
-          <div style={{ maxWidth: "42rem", margin: "0 auto", textAlign: "left" }}>
-            <h2 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>
-              Example of what you'll see
-            </h2>
-            <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "1rem", lineHeight: 1.625 }}>
-              Every finding in your report looks like this — clear, actionable, and in plain English.
-            </p>
-          </div>
-          <div style={{ maxWidth: "640px", margin: "0 auto" }}>
-          <Card
+          <h2 style={{ margin: "0 0 0.5rem", color: "var(--text)", textAlign: "center" }}>
+            Most security tools tell you what&apos;s wrong.
+            <br />
+            VibeScan tells you how to fix it.
+          </h2>
+          <p style={{ color: "var(--text-muted)", margin: "0 0 2rem", fontSize: "1rem", lineHeight: 1.625, textAlign: "center" }}>
+            We translate security findings into plain English with actionable fixes.
+          </p>
+
+          {/* Two-column comparison */}
+          <div
             style={{
-              borderColor: "var(--warn)",
-              maxWidth: "640px",
-              padding: "2rem",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "2rem",
+              marginBottom: "2.5rem",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  color: "var(--warn)",
-                }}
-              >
-                medium
-              </span>
-              <span
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: "0.8125rem",
-                  fontFamily: "var(--font-mono), ui-monospace, monospace",
-                }}
-              >
-                src/api/helper.js (line 42)
-              </span>
+            <div
+              style={{
+                padding: "1.5rem",
+                borderRadius: "12px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+              }}
+            >
+              <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", fontWeight: 600, color: "var(--text)" }}>
+                Typical security tools
+              </h3>
+              <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", fontSize: "0.9375rem", color: "var(--text-muted)", lineHeight: 1.75 }}>
+                <li>❌ Technical jargon</li>
+                <li>❌ Hard to understand severity</li>
+                <li>❌ No actionable fixes</li>
+                <li>❌ Requires security expertise</li>
+                <li>❌ Long, unstructured reports</li>
+              </ul>
             </div>
-            <h3 style={{ margin: "0 0 0.75rem", color: "var(--text)" }}>
-              Unsafe use of user input in system command
-            </h3>
-            <p style={{ margin: "0 0 1rem", lineHeight: 1.625, color: "var(--text)" }}>
-              This code passes user-provided input into a system command. If an attacker can control that input, they could run arbitrary commands on the server.
-            </p>
-            <p style={{ margin: "0 0 1rem", lineHeight: 1.625, color: "var(--text)" }}>
-              <strong>Why it matters:</strong> This could let someone access or change your app’s data, or harm your users.
-            </p>
-            <p style={{ margin: 0, lineHeight: 1.625, color: "var(--text)" }}>
-              <strong>What to do:</strong> Avoid building commands from user input. Use a safe API or allowlist specific values instead.
-            </p>
-          </Card>
+            <div
+              style={{
+                padding: "1.5rem",
+                borderRadius: "12px",
+                background: "var(--card)",
+                border: "2px solid var(--brand)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", fontWeight: 600, color: "var(--brand)" }}>
+                VibeScan
+              </h3>
+              <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", fontSize: "0.9375rem", color: "var(--text)", lineHeight: 1.75 }}>
+                <li>✅ Plain English explanations</li>
+                <li>✅ Clear risk explanations</li>
+                <li>✅ Copy-paste fixes</li>
+                <li>✅ Built for non-security developers</li>
+                <li>✅ Prioritized, actionable report</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Example comparison */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "1.5rem",
+            }}
+          >
+            <div>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-muted)" }}>
+                Typical output
+              </h4>
+              <div
+                style={{
+                  padding: "1.25rem",
+                  borderRadius: "8px",
+                  background: "#f3f4f6",
+                  fontFamily: "var(--font-mono), ui-monospace, monospace",
+                  fontSize: "0.8125rem",
+                  color: "var(--text)",
+                  lineHeight: 1.6,
+                }}
+              >
+                Rule: js.security.audit.detect-non-literal-regexp
+                <br />
+                Severity: WARNING
+                <br />
+                Message: RegExp called with non-literal argument...
+              </div>
+            </div>
+            <div>
+              <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.875rem", fontWeight: 600, color: "var(--text)" }}>
+                VibeScan output
+              </h4>
+              <Card style={{ padding: "1.25rem", borderColor: "var(--border)" }}>
+                <p style={{ margin: "0 0 0.75rem", fontSize: "0.9375rem", lineHeight: 1.6, color: "var(--text)" }}>
+                  <strong>Problem:</strong>
+                  <br />
+                  User input is being used inside a regex.
+                </p>
+                <p style={{ margin: "0 0 0.75rem", fontSize: "0.9375rem", lineHeight: 1.6, color: "var(--text)" }}>
+                  <strong>Why this matters:</strong>
+                  <br />
+                  An attacker could cause your app to hang or crash.
+                </p>
+                <p style={{ margin: 0, fontSize: "0.9375rem", lineHeight: 1.6, color: "var(--text)" }}>
+                  <strong>How to fix:</strong>
+                  <br />
+                  Validate or sanitize the input before using it in RegExp.
+                </p>
+              </Card>
+            </div>
           </div>
         </Container>
       </section>
@@ -177,27 +224,20 @@ export default function Home() {
         }}
       >
         <Container>
-          <ul
+          <p
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "1.5rem 2rem",
-              listStyle: "none",
               margin: 0,
-              padding: 0,
-              justifyContent: "center",
+              textAlign: "center",
               fontSize: "0.9375rem",
               color: "var(--text-muted)",
             }}
           >
-            <li>Fast scan — results in minutes</li>
-            <li>Plain-English reports</li>
-            <li>Code-level security checks</li>
-          </ul>
+            • Fast scans (minutes) • Plain-English reports • No code stored after scanning
+          </p>
         </Container>
       </section>
 
-      {/* CTA */}
+      {/* Final CTA */}
       <section
         style={{
           textAlign: "center",
@@ -205,10 +245,12 @@ export default function Home() {
           borderTop: "1px solid #E2E8F0",
         }}
       >
-        <ButtonPrimary href="/checkout">Run a Vibe Scan — $9</ButtonPrimary>
-        <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: "0.75rem 0 0", lineHeight: 1.5 }}>
-          One-time scan. No subscription.
-        </p>
+        <Container>
+          <h2 style={{ margin: "0 0 1.5rem", fontSize: "1.25rem", fontWeight: 600, color: "var(--text)" }}>
+            Ready to launch with confidence?
+          </h2>
+          <ButtonPrimary href="/checkout">Run a Vibe Scan — $9</ButtonPrimary>
+        </Container>
       </section>
     </>
   );

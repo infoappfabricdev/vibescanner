@@ -37,7 +37,7 @@ export default function TrustPage() {
               Code retention policy
             </h2>
             <p style={{ fontSize: "1rem", color: "var(--text)", margin: 0, lineHeight: 1.625 }}>
-              We do not store your source code on our servers after the scan is complete. Your zip is extracted in memory (or in a temporary directory) only for the duration of the scan. We store scan results so we can show your report when you view it. Once you have your results in the browser, we do not keep a copy of your code.
+              We don&apos;t store your source code after the scan. Your zip is extracted in memory or in a temporary directory only during the scan. We store scan results so you can view your report later. We do not keep a copy of your code.
             </p>
           </div>
         </Container>
@@ -50,7 +50,7 @@ export default function TrustPage() {
               Where scanning runs
             </h2>
             <p style={{ fontSize: "1rem", color: "var(--text)", margin: 0, lineHeight: 1.625 }}>
-              When you run a Vibe Scan, your zip is sent to our scan service (hosted on a trusted cloud provider). The scan runs in an isolated environment. We use the scan only to produce your report and do not use your code for training models, marketing, or any purpose other than performing the scan you requested.
+              Scanning runs in an isolated environment. Your code is used only to produce your report — not for training, marketing, or any other purpose.
             </p>
           </div>
         </Container>
@@ -63,7 +63,7 @@ export default function TrustPage() {
               Logs and privacy
             </h2>
             <p style={{ fontSize: "1rem", color: "var(--text)", margin: 0, lineHeight: 1.625 }}>
-              We may log minimal, non-sensitive metadata (for example, that a scan was run and whether it completed successfully) to operate and improve the service. We do not log the contents of your code or the details of your report. We do not sell your data or use it for advertising. If we change how we handle data, we'll update this page and keep our practices clear and transparent.
+              We log minimal metadata only (e.g. that a scan ran and completed). We never log code contents or report details. We don&apos;t sell your data. Any changes to how we handle data will be reflected on this page.
             </p>
           </div>
         </Container>
@@ -73,8 +73,8 @@ export default function TrustPage() {
         <Container>
           <div style={{ maxWidth: "42rem", margin: "0 auto", textAlign: "left" }}>
             <p style={{ fontSize: "0.9375rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.625 }}>
-            If you have questions about trust, privacy, or how we handle your code, we're happy to clarify. Reach out through the contact information on the site.
-          </p>
+              Questions? We&apos;re happy to clarify how we handle your code and data — reach out through the contact information on the site.
+            </p>
           </div>
         </Container>
       </section>

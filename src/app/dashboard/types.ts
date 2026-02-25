@@ -62,6 +62,7 @@ Apply the fix directly in code.`;
 /**
  * Map stored findings from DB to normalized shape for the dashboard.
  * Uses stored summaryText/detailsText only; no generation, no LLM.
+ * Do not import enrich-findings-once or any LLM/Anthropic module in dashboard code.
  * For legacy scans without stored fields, falls back to getSummaryText (client-safe heuristic).
  */
 export function mapReportFindingsToNormalized(
