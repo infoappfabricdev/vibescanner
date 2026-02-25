@@ -26,6 +26,14 @@ export type StoredFinding = ReportFinding & {
   generatedAt: string;
 };
 
+/** Mutable row during enrichment; summaryText/generatedBy filled before return. */
+type EnrichmentRow = ReportFinding & {
+  detailsText: string;
+  generatedAt: string;
+  summaryText?: string;
+  generatedBy?: GeneratedBy;
+};
+
 /**
  * One batch LLM request: input indices and findings, return array of
  * { index, summaryText, fixPrompt } or null on any failure.
@@ -120,7 +128,7 @@ export async function enrichFindingsOnce(findings: ReportFinding[]): Promise<Sto
   if (findings.length === 0) return [];
 
   const needLlm: number[] = [];
-  const baseStored: (StoredFinding & { summaryText?: string; generatedBy?: GeneratedBy })[] = findings.map((f, idx) => {
+  const baseStored: EnrichmentRow[] = findings.map((f, idx): EnrichmentRow => {
     const detailsText = f.explanation ?? "";
     const curated = getCuratedSummary(f.checkId ?? "");
     if (curated) {
@@ -135,9 +143,7 @@ export async function enrichFindingsOnce(findings: ReportFinding[]): Promise<Sto
     needLlm.push(idx);
     return {
       ...f,
-      summaryText: undefined,
       detailsText,
-      generatedBy: undefined,
       generatedAt,
     };
   });

@@ -187,33 +187,35 @@ export default async function DashboardPage() {
 
           {/* Recommended action banner */}
           <div
-            style={{
-              marginBottom: "2.5rem",
-              padding: "1rem 1.25rem",
-              borderRadius: "8px",
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "0.75rem",
-              background:
-                banner.variant === "danger"
-                  ? "rgba(220, 38, 38, 0.1)"
-                  : banner.variant === "warn"
-                    ? "rgba(245, 158, 11, 0.12)"
-                    : banner.variant === "success"
-                      ? "rgba(22, 163, 74, 0.1)"
-                      : "var(--border)",
-              border:
-                "1px solid " +
-                (banner.variant === "danger"
-                  ? "var(--danger)"
-                  : banner.variant === "warn"
-                    ? "var(--warn)"
-                    : banner.variant === "success"
-                      ? "var(--success)"
-                      : "var(--border)"),
-            }}
+            style={
+              {
+                marginBottom: "2.5rem",
+                padding: "1rem 1.25rem",
+                borderRadius: "8px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                background:
+                  banner.variant === "danger"
+                    ? "rgba(220, 38, 38, 0.1)"
+                    : banner.variant === "warn"
+                      ? "rgba(245, 158, 11, 0.12)"
+                      : banner.variant === "success"
+                        ? "rgba(22, 163, 74, 0.1)"
+                        : "var(--border)",
+                border:
+                  "1px solid " +
+                  (banner.variant === "danger"
+                    ? "var(--danger)"
+                    : banner.variant === "warn"
+                      ? "var(--warn)"
+                      : banner.variant === "success"
+                        ? "var(--success)"
+                        : "var(--border)"),
+              } satisfies React.CSSProperties
+            }
           >
             <span
               style={{
@@ -241,7 +243,7 @@ export default async function DashboardPage() {
           <section style={sectionSpacing}>
             <h2 style={sectionHeading}>Security score</h2>
             <Card style={{ padding: "1.5rem" }} className="dashboard-card-hover">
-              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" } satisfies React.CSSProperties}>
                 <div
                   style={{
                     fontSize: "2.5rem",
@@ -344,13 +346,15 @@ export default async function DashboardPage() {
               <h2 style={sectionHeading}>Latest scan</h2>
               {lastScan ? (
                 <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "1rem",
-                  }}
+                  style={
+                    {
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "1rem",
+                    } satisfies React.CSSProperties
+                  }
                 >
                   <div>
                     <p style={{ margin: "0 0 0.25rem", color: "var(--text)", fontWeight: 500 }}>
@@ -475,17 +479,19 @@ export default async function DashboardPage() {
                       <Link
                         href={"/dashboard/scans/" + s.id}
                         className="dashboard-scan-row"
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "0.75rem",
-                          padding: "1rem 1.25rem",
-                          background: "var(--card)",
-                          textDecoration: "none",
-                          color: "var(--text)",
-                        }}
+                        style={
+                          {
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "0.75rem",
+                            padding: "1rem 1.25rem",
+                            background: "var(--card)",
+                            textDecoration: "none",
+                            color: "var(--text)",
+                          } satisfies React.CSSProperties
+                        }
                       >
                         <span style={{ fontWeight: 500, fontSize: "0.9375rem" }}>
                           {new Date(s.created_at).toLocaleDateString(undefined, {
@@ -496,7 +502,7 @@ export default async function DashboardPage() {
                             timeStyle: "short",
                           })}
                         </span>
-                        <span style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                        <span style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" } satisfies React.CSSProperties}>
                           {hasHigh && (
                             <span
                               style={{
