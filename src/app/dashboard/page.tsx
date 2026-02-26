@@ -12,6 +12,7 @@ import { mapReportFindingsToNormalized, type StoredFinding } from "./types";
 type ScanRow = {
   id: string;
   created_at: string;
+  project_name?: string | null;
   finding_count: number;
   critical_count?: number;
   high_count: number;
@@ -95,7 +96,7 @@ export default async function DashboardPage() {
     supabase.from("scan_credits").select("credits_remaining").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("scans")
-      .select("id, created_at, finding_count, critical_count, high_count, medium_count, low_count, findings")
+      .select("id, created_at, project_name, finding_count, critical_count, high_count, medium_count, low_count, findings")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -362,13 +363,9 @@ export default async function DashboardPage() {
                 >
                   <div>
                     <p style={{ margin: "0 0 0.25rem", color: "var(--text)", fontWeight: 500 }}>
-                      {new Date(lastScan.created_at).toLocaleDateString(undefined, {
-                        dateStyle: "medium",
-                      })}{" "}
-                      at{" "}
-                      {new Date(lastScan.created_at).toLocaleTimeString(undefined, {
-                        timeStyle: "short",
-                      })}
+                      {(lastScan.project_name && lastScan.project_name.trim())
+                        ? `${lastScan.project_name.trim()} — ${new Date(lastScan.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(lastScan.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`
+                        : `Untitled Scan — ${new Date(lastScan.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(lastScan.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`}
                     </p>
                     <p style={{ margin: "0 0 0.25rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
                       {lastScan.finding_count} finding{lastScan.finding_count !== 1 ? "s" : ""}
@@ -501,13 +498,9 @@ export default async function DashboardPage() {
                         }
                       >
                         <span style={{ fontWeight: 500, fontSize: "0.9375rem" }}>
-                          {new Date(s.created_at).toLocaleDateString(undefined, {
-                            dateStyle: "medium",
-                          })}{" "}
-                          at{" "}
-                          {new Date(s.created_at).toLocaleTimeString(undefined, {
-                            timeStyle: "short",
-                          })}
+                          {(s.project_name && s.project_name.trim())
+                            ? `${s.project_name.trim()} — ${new Date(s.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(s.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`
+                            : `Untitled Scan — ${new Date(s.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(s.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`}
                         </span>
                         <span style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" } satisfies React.CSSProperties}>
                           {hasCritical && (

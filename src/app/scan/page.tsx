@@ -126,6 +126,7 @@ function ScanPageContent() {
   const router = useRouter();
   const sessionId = searchParams.get("session_id");
   const [ready, setReady] = useState(false);
+  const [projectName, setProjectName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -191,6 +192,7 @@ function ScanPageContent() {
     try {
       const formData = new FormData();
       formData.set("file", file);
+      formData.set("project_name", projectName.trim() || "");
 
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -254,20 +256,44 @@ function ScanPageContent() {
             onSubmit={handleSubmit}
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "0.75rem",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: "1rem",
             }}
           >
-            <input
-              type="file"
-              accept=".zip"
-              onChange={(e) => {
-                setFile(e.target.files?.[0] ?? null);
-                setError(null);
-              }}
-              style={{ fontSize: "0.9375rem" }}
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%", maxWidth: "24rem" }}>
+              <label htmlFor="scan-project-name" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
+                Project name
+              </label>
+              <input
+                id="scan-project-name"
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="My Lovable App"
+                style={{ fontSize: "0.9375rem", padding: "0.5rem 0.75rem", border: "1px solid var(--border)", borderRadius: "8px" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <label htmlFor="scan-file" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
+                Zip file
+              </label>
+              <input
+                id="scan-file"
+                type="file"
+                accept=".zip"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setFile(f);
+                  setError(null);
+                  if (f?.name) {
+                    const base = f.name.toLowerCase().endsWith(".zip") ? f.name.slice(0, -4) : f.name;
+                    setProjectName(base);
+                  }
+                }}
+                style={{ fontSize: "0.9375rem" }}
+              />
+            </div>
             <button
               type="submit"
               disabled={loading}

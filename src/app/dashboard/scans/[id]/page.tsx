@@ -99,7 +99,7 @@ export default async function ScanReportPage({
 
   const { data: scan, error } = await supabase
     .from("scans")
-    .select("id, created_at, findings, finding_count, critical_count, high_count, medium_count, low_count")
+    .select("id, created_at, project_name, findings, finding_count, critical_count, high_count, medium_count, low_count")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -119,7 +119,9 @@ export default async function ScanReportPage({
             ← Back to dashboard
           </Link>
         </p>
-        <h1 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>Scan report</h1>
+        <h1 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>
+          {(scan as { project_name?: string | null }).project_name?.trim() || "Untitled Scan"}
+        </h1>
         <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
           {new Date(scan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
           {" · "}

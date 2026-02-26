@@ -71,6 +71,11 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+  const rawProjectName = formData.get("project_name");
+  const projectName =
+    typeof rawProjectName === "string" && rawProjectName.trim()
+      ? rawProjectName.trim()
+      : null;
   const buf = Buffer.from(await file.arrayBuffer());
   if (buf.length === 0) {
     return NextResponse.json(
@@ -106,6 +111,7 @@ export async function POST(request: NextRequest) {
       const { critical, high, medium, low } = countSeverities(findings);
       await admin.from("scans").insert({
         user_id: user.id,
+        project_name: projectName,
         findings: findings as unknown as Record<string, unknown>[],
         finding_count: findings.length,
         critical_count: critical,
@@ -192,6 +198,7 @@ export async function POST(request: NextRequest) {
     const { critical, high, medium, low } = countSeverities(findings);
     await admin.from("scans").insert({
       user_id: user.id,
+      project_name: projectName,
       findings: findings as unknown as Record<string, unknown>[],
       finding_count: findings.length,
       critical_count: critical,
