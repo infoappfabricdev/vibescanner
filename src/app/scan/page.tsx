@@ -288,7 +288,7 @@ function ScanPageContent() {
                   setError(null);
                   if (f?.name) {
                     const base = f.name.toLowerCase().endsWith(".zip") ? f.name.slice(0, -4) : f.name;
-                    setProjectName(base);
+                    setProjectName((prev) => (prev.trim() === "" ? base : prev));
                   }
                 }}
                 style={{ fontSize: "0.9375rem" }}
