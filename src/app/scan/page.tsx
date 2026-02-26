@@ -207,7 +207,7 @@ function ScanPageContent() {
         return;
       }
 
-      setResult(data);
+      router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
