@@ -158,7 +158,7 @@ function oneFindingFromUnified(u: UnifiedFinding): ReportFinding {
   const extra = u.extra ?? {};
   const message = extra.message ?? "";
   const checkId = (u.check_id ?? "").toString();
-  const scanner = u.scanner === "gitleaks" ? "gitleaks" : "semgrep";
+  const scanner: "semgrep" | "gitleaks" = u.scanner === "gitleaks" ? "gitleaks" : "semgrep";
   const title = toTitle(checkId, message);
   const explanation = toExplanation(message, checkId);
   const severity = normalizeSeverity(extra.severity);
