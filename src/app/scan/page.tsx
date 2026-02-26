@@ -11,12 +11,14 @@ import Card from "@/components/ui/Card";
 function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
   const [copied, setCopied] = useState(false);
   const severityColors: Record<string, string> = {
+    critical: "#b91c1c",
     high: "var(--danger)",
     medium: "var(--warn)",
     low: "var(--warn)",
     info: "var(--brand)",
   };
   const color = severityColors[f.severity] ?? "var(--text-muted)";
+  const scannerLabel = f.scanner === "gitleaks" ? "Gitleaks" : "Semgrep";
 
   async function handleCopy() {
     try {
@@ -39,7 +41,7 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
         <span
           style={{
             fontSize: "0.75rem",
@@ -49,6 +51,18 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
           }}
         >
           {f.severity}
+        </span>
+        <span
+          style={{
+            fontSize: "0.6875rem",
+            color: "var(--text-muted)",
+            textTransform: "capitalize",
+            padding: "0.1rem 0.35rem",
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+          }}
+        >
+          {scannerLabel}
         </span>
         <span style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
           #{index + 1} · {f.file}

@@ -9,7 +9,7 @@ import FindingsFilterBar from "@/components/dashboard/FindingsFilterBar";
 import FindingCard from "@/components/dashboard/FindingCard";
 import FixWithAIModal from "@/components/dashboard/FixWithAIModal";
 
-const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
+const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
 
 type Props = {
   findings: NormalizedFinding[];
@@ -18,7 +18,7 @@ type Props = {
 
 function filterBySeveritySearchQuickFix<T extends NormalizedFinding>(
   list: T[],
-  severityFilter: Set<"high" | "medium" | "low">,
+  severityFilter: Set<"critical" | "high" | "medium" | "low">,
   quickFixOnly: boolean,
   searchQuery: string
 ): T[] {
@@ -46,7 +46,7 @@ function statusLabel(s: FindingStatus): string {
 export default function TopIssuesSection({ findings, emptyMessage }: Props) {
   const [stateByFindingId, setStateByFindingId] = useState<Record<string, FindingState>>({});
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
-  const [severityFilter, setSeverityFilter] = useState<Set<"high" | "medium" | "low">>(new Set(["high", "medium", "low"]));
+  const [severityFilter, setSeverityFilter] = useState<Set<"critical" | "high" | "medium" | "low">>(new Set(["critical", "high", "medium", "low"]));
   const [quickFixOnly, setQuickFixOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [fixWithAIModalFinding, setFixWithAIModalFinding] = useState<NormalizedFinding | null>(null);
@@ -55,7 +55,7 @@ export default function TopIssuesSection({ findings, emptyMessage }: Props) {
     setStateByFindingId(getFindingStates());
   }, []);
 
-  const onSeverityToggle = (s: "high" | "medium" | "low") => {
+  const onSeverityToggle = (s: "critical" | "high" | "medium" | "low") => {
     setSeverityFilter((prev) => {
       const next = new Set(prev);
       if (next.has(s)) next.delete(s);

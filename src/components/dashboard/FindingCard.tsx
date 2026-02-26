@@ -52,10 +52,10 @@ type Props = {
 };
 
 const severityColor = (s: string) =>
-  s === "high" ? "var(--danger)" : s === "medium" ? "var(--warn)" : "#6b7280";
+  s === "critical" ? "#b91c1c" : s === "high" ? "var(--danger)" : s === "medium" ? "var(--warn)" : "#6b7280";
 
 const borderColor = (s: string) =>
-  s === "high" ? "var(--danger)" : s === "medium" ? "#eab308" : "#9ca3af";
+  s === "critical" ? "#b91c1c" : s === "high" ? "var(--danger)" : s === "medium" ? "#eab308" : "#9ca3af";
 
 export default function FindingCard({
   finding,

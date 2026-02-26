@@ -13,6 +13,7 @@ type ScanRow = {
   id: string;
   created_at: string;
   finding_count: number;
+  critical_count?: number;
   high_count: number;
   medium_count: number;
   low_count: number;
@@ -20,13 +21,15 @@ type ScanRow = {
 };
 
 function getStatusFromScan(s: ScanRow): { variant: "danger" | "warn" | "success"; label: string } {
-  if (s.high_count > 0) return { variant: "danger", label: "\u26A0\uFE0F Fix before launch" };
+  const critical = s.critical_count ?? 0;
+  if (critical > 0 || s.high_count > 0) return { variant: "danger", label: "\u26A0\uFE0F Fix before launch" };
   if (s.medium_count > 0) return { variant: "warn", label: "\u26A0\uFE0F Review recommended" };
   return { variant: "success", label: "\u2705 Looks safe" };
 }
 
-function securityScore(high: number, medium: number, low: number): number {
-  const s = 100 - 25 * high - 10 * medium - 3 * low;
+function securityScore(critical: number, high: number, medium: number, low: number): number {
+  const c = critical ?? 0;
+  const s = 100 - 40 * c - 25 * high - 10 * medium - 3 * low;
   return s < 0 ? 0 : s;
 }
 
@@ -92,7 +95,7 @@ export default async function DashboardPage() {
     supabase.from("scan_credits").select("credits_remaining").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("scans")
-      .select("id, created_at, finding_count, high_count, medium_count, low_count, findings")
+      .select("id, created_at, finding_count, critical_count, high_count, medium_count, low_count, findings")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -117,7 +120,7 @@ export default async function DashboardPage() {
   const score =
     lastScan === null
       ? 100
-      : securityScore(lastScan.high_count, lastScan.medium_count, lastScan.low_count);
+      : securityScore(lastScan.critical_count ?? 0, lastScan.high_count, lastScan.medium_count, lastScan.low_count);
   const scoreStatusResult = scoreStatus(score);
   // Dashboard uses stored fields only; no LLM, no generation (see enrich-findings-once.ts).
   const lastScanFindings = (lastScan?.findings ?? []) as StoredFinding[];
@@ -135,10 +138,11 @@ export default async function DashboardPage() {
         href: scanOrPricingHref,
       };
     }
-    if (lastScan.high_count > 0) {
+    const critical = lastScan.critical_count ?? 0;
+    if (critical > 0 || lastScan.high_count > 0) {
       return {
         variant: "danger" as const,
-        message: "High-risk issues detected. Fix these before launching.",
+        message: critical > 0 ? "Secrets or critical issues detected. Fix these before launching." : "High-risk issues detected. Fix these before launching.",
         cta: "View report",
         href: `/dashboard/scans/${lastScan.id}`,
       };
@@ -460,13 +464,16 @@ export default async function DashboardPage() {
                 {scans.map((s) => {
                   const status = getStatusFromScan(s);
                   const isNotLast = scans.indexOf(s) < scans.length - 1;
+                  const criticalCount = s.critical_count ?? 0;
+                  const hasCritical = criticalCount > 0;
                   const hasHigh = s.high_count > 0;
                   const hasMedium = s.medium_count > 0;
                   const hasLow = s.low_count > 0;
+                  const criticalLabel = "C" + (criticalCount > 1 ? " " + criticalCount : "");
                   const highLabel = "H" + (s.high_count > 1 ? " " + s.high_count : "");
                   const mediumLabel = "M" + (s.medium_count > 1 ? " " + s.medium_count : "");
                   const lowLabel = "L" + (s.low_count > 1 ? " " + s.low_count : "");
-                  const noSeverity = !hasHigh && !hasMedium && !hasLow;
+                  const noSeverity = !hasCritical && !hasHigh && !hasMedium && !hasLow;
                   const findingLabel =
                     s.finding_count + " finding" + (s.finding_count !== 1 ? "s" : "");
                   return (
@@ -503,6 +510,20 @@ export default async function DashboardPage() {
                           })}
                         </span>
                         <span style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" } satisfies React.CSSProperties}>
+                          {hasCritical && (
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                padding: "0.2rem 0.4rem",
+                                borderRadius: "4px",
+                                background: "#b91c1c",
+                                color: "#fff",
+                              }}
+                            >
+                              {criticalLabel}
+                            </span>
+                          )}
                           {hasHigh && (
                             <span
                               style={{

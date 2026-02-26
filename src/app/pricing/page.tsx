@@ -103,7 +103,7 @@ export default function PricingPage() {
               </span>
             </div>
             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
-              Unlimited scans and more features. We&apos;re building this next — stay tuned.
+              Monthly scans and more features. We&apos;re building this next — stay tuned.
             </p>
           </div>
           </div>

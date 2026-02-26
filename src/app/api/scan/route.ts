@@ -13,15 +13,17 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 function countSeverities(findings: ReportFinding[]) {
+  let critical = 0;
   let high = 0;
   let medium = 0;
   let low = 0;
   for (const f of findings) {
-    if (f.severity === "high") high++;
+    if (f.severity === "critical") critical++;
+    else if (f.severity === "high") high++;
     else if (f.severity === "medium") medium++;
     else low++;
   }
-  return { high, medium, low };
+  return { critical, high, medium, low };
 }
 
 /**
@@ -101,11 +103,12 @@ export async function POST(request: NextRequest) {
         findings = await enrichFindingsOnce(findings);
       }
       (data as Record<string, unknown>).report = findings;
-      const { high, medium, low } = countSeverities(findings);
+      const { critical, high, medium, low } = countSeverities(findings);
       await admin.from("scans").insert({
         user_id: user.id,
         findings: findings as unknown as Record<string, unknown>[],
         finding_count: findings.length,
+        critical_count: critical,
         high_count: high,
         medium_count: medium,
         low_count: low,
@@ -186,11 +189,12 @@ export async function POST(request: NextRequest) {
       findings = await enrichFindingsOnce(findings);
     }
     response.report = findings;
-    const { high, medium, low } = countSeverities(findings);
+    const { critical, high, medium, low } = countSeverities(findings);
     await admin.from("scans").insert({
       user_id: user.id,
       findings: findings as unknown as Record<string, unknown>[],
       finding_count: findings.length,
+      critical_count: critical,
       high_count: high,
       medium_count: medium,
       low_count: low,

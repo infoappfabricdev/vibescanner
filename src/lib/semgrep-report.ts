@@ -36,7 +36,7 @@ export interface SemgrepOutput {
 
 /** One finding in our plain-English report. */
 export interface ReportFinding {
-  /** Semgrep rule check_id (e.g. "python.lang.security.audit.insecure-transport"). */
+  /** Semgrep rule check_id or Gitleaks RuleID. */
   checkId: string;
   title: string;
   explanation: string;
@@ -46,7 +46,9 @@ export interface ReportFinding {
   fixPrompt: string;
   file: string;
   line: number | null;
-  severity: "high" | "medium" | "low" | "info";
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  /** Which scanner produced this finding. */
+  scanner?: "semgrep" | "gitleaks";
 }
 
 /** Turn a technical rule id into a short, readable title. */
@@ -113,7 +115,8 @@ function toFixSuggestion(extra: SemgrepExtra): string {
 
 function normalizeSeverity(s: string | undefined): ReportFinding["severity"] {
   const v = (s ?? "").toLowerCase();
-  if (v === "error" || v === "critical" || v === "high") return "high";
+  if (v === "critical") return "critical";
+  if (v === "error" || v === "high") return "high";
   if (v === "warning" || v === "medium") return "medium";
   if (v === "info" || v === "low") return "low";
   return "info";
@@ -141,15 +144,80 @@ Why it matters: ${f.whyItMatters}
 Please fix it: ${f.fixSuggestion}`;
 }
 
+/** Unified finding from scan-service (semgrep or gitleaks normalized). */
+export interface UnifiedFinding {
+  scanner?: "semgrep" | "gitleaks";
+  check_id?: string;
+  path?: string;
+  start?: { line?: number | null };
+  extra?: { message?: string; severity?: string };
+  [key: string]: unknown;
+}
+
+function oneFindingFromUnified(u: UnifiedFinding): ReportFinding {
+  const extra = u.extra ?? {};
+  const message = extra.message ?? "";
+  const checkId = (u.check_id ?? "").toString();
+  const scanner = u.scanner === "gitleaks" ? "gitleaks" : "semgrep";
+  const title = toTitle(checkId, message);
+  const explanation = toExplanation(message, checkId);
+  const severity = normalizeSeverity(extra.severity);
+  const whyItMatters =
+    scanner === "gitleaks"
+      ? "Exposed secrets can be used to access your accounts, APIs, or data. Remove them immediately and rotate any real credentials."
+      : toWhyItMatters(extra.severity, (extra as SemgrepExtra).metadata);
+  const fixSuggestion =
+    scanner === "gitleaks"
+      ? "Remove the secret from the code immediately. Store it in environment variables or a secrets manager and rotate the credential if it was ever committed."
+      : toFixSuggestion(extra as SemgrepExtra);
+  const file = (u.path ?? "").toString();
+  const line = u.start?.line ?? null;
+  const finding = {
+    checkId,
+    title,
+    explanation,
+    whyItMatters,
+    fixSuggestion,
+    file,
+    line,
+    severity,
+    scanner,
+  };
+  return {
+    ...finding,
+    fixPrompt: buildFixPrompt(finding),
+  };
+}
+
+const SEVERITY_SORT_ORDER: Record<ReportFinding["severity"], number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  info: 4,
+};
+
 /**
- * Convert raw Semgrep API response into a list of plain-English report findings.
+ * Convert API response into a list of plain-English report findings.
+ * Reads from unified findings array if present; otherwise falls back to semgrep.results.
+ * Preserves scanner and sorts by severity (critical → high → medium → low → info).
  */
 export function buildReport(apiResponse: Record<string, unknown>): ReportFinding[] {
+  const unified = apiResponse.findings as UnifiedFinding[] | undefined;
+  if (Array.isArray(unified) && unified.length >= 0) {
+    const list = unified.map((u) => oneFindingFromUnified(u));
+    list.sort(
+      (a, b) =>
+        (SEVERITY_SORT_ORDER[a.severity] ?? 99) - (SEVERITY_SORT_ORDER[b.severity] ?? 99)
+    );
+    return list;
+  }
+
   const semgrep = apiResponse.semgrep as SemgrepOutput | undefined;
   const results = semgrep?.results ?? [];
   if (!Array.isArray(results)) return [];
 
-  return results.map((r: SemgrepResult) => {
+  const list = (results as SemgrepResult[]).map((r) => {
     const extra = r.extra ?? {};
     const message = extra.message;
     const checkId = r.check_id ?? "";
@@ -160,7 +228,7 @@ export function buildReport(apiResponse: Record<string, unknown>): ReportFinding
     const file = r.path;
     const line = r.start?.line ?? null;
     const severity = normalizeSeverity(extra.severity);
-    const finding = {
+    const finding: ReportFinding = {
       checkId,
       title,
       explanation,
@@ -169,10 +237,15 @@ export function buildReport(apiResponse: Record<string, unknown>): ReportFinding
       file,
       line,
       severity,
+      scanner: "semgrep",
+      fixPrompt: "",
     };
-    return {
-      ...finding,
-      fixPrompt: buildFixPrompt(finding),
-    };
+    finding.fixPrompt = buildFixPrompt(finding);
+    return finding;
   });
+  list.sort(
+    (a, b) =>
+      (SEVERITY_SORT_ORDER[a.severity] ?? 99) - (SEVERITY_SORT_ORDER[b.severity] ?? 99)
+  );
+  return list;
 }

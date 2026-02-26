@@ -1,6 +1,6 @@
 "use client";
 
-type Severity = "high" | "medium" | "low";
+type Severity = "critical" | "high" | "medium" | "low";
 export type StatusFilter = "open" | "fixed" | "ignored" | "false_positive" | "all";
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
   totalCount: number;
 };
 
-const SEVERITIES: Severity[] = ["high", "medium", "low"];
+const SEVERITIES: Severity[] = ["critical", "high", "medium", "low"];
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "open", label: "Open" },
   { value: "fixed", label: "Fixed" },
@@ -83,7 +83,7 @@ export default function FindingsFilterBar({
                 fontWeight: 500,
                 borderRadius: "9999px",
                 border: "1px solid var(--border)",
-                background: on ? (s === "high" ? "var(--danger)" : s === "medium" ? "var(--warn)" : "#6b7280") : "var(--card)",
+                background: on ? (s === "critical" ? "#b91c1c" : s === "high" ? "var(--danger)" : s === "medium" ? "var(--warn)" : "#6b7280") : "var(--card)",
                 color: on ? "#fff" : "var(--text-muted)",
                 cursor: "pointer",
                 textTransform: "capitalize",

@@ -12,6 +12,54 @@ import { getCuratedSummary } from "./finding-summary";
 
 // Rule coverage: see RULE_SUMMARIES in finding-summary.ts. Unmapped rules get one batched LLM call or rules_fallback.
 
+/** Infer hosting platform from file paths in the scan (for secrets fix instructions). */
+function inferHostingPlatform(findings: ReportFinding[]): "vercel" | "railway" | "supabase" | "lovable" | null {
+  const paths = findings.map((f) => f.file?.toLowerCase() ?? "").join(" ");
+  if (/vercel\.json|\.vercel\b|vc\/config/i.test(paths)) return "vercel";
+  if (/railway\.(toml|json)|railway\.config/i.test(paths)) return "railway";
+  if (/supabase\/|supabase\.config|@supabase/i.test(paths)) return "supabase";
+  if (/lovable|bolt\.config|\.bolt\b/i.test(paths)) return "lovable";
+  return null;
+}
+
+/** Platform-specific instructions for where to store secrets (env vars / secret managers). */
+const PLATFORM_SECRET_INSTRUCTIONS: Record<string, string> = {
+  vercel:
+    "Store the secret in Vercel: Project Settings → Environment Variables. Use the dashboard or Vercel CLI (vercel env add). Never commit .env to git.",
+  railway:
+    "Store the secret in Railway: Project → Variables tab, or use the Railway CLI. Never commit .env to git.",
+  supabase:
+    "Store the secret in Supabase: Project Settings → API or use Supabase Vault for sensitive values. In app code use environment variables loaded at runtime.",
+  lovable:
+    "Store the secret in your hosting platform's environment variables (e.g. Vercel, Railway, or Lovable's env settings). Never commit .env or hardcode secrets.",
+};
+
+/** Build a fix prompt for a Gitleaks (secrets) finding: remove secret, rotate if needed, store in platform-specific place. */
+function getSecretsFixPrompt(
+  platform: "vercel" | "railway" | "supabase" | "lovable" | null,
+  file: string,
+  line: number | null
+): string {
+  const location = line != null ? `${file} at line ${line}` : file;
+  const platformInstructions = platform
+    ? PLATFORM_SECRET_INSTRUCTIONS[platform]
+    : [
+        PLATFORM_SECRET_INSTRUCTIONS.vercel,
+        PLATFORM_SECRET_INSTRUCTIONS.railway,
+        PLATFORM_SECRET_INSTRUCTIONS.lovable,
+      ].join(" Alternatively: ");
+  return `A secret (password, API key, or token) was detected in ${location}. This is a critical security issue.
+
+1. Remove the secret from the code immediately. Do not commit it again.
+2. If this credential was ever deployed or shared, rotate it now (revoke and create a new one in the service's dashboard).
+3. Store the secret securely: ${platformInstructions}
+
+After moving the value to environment variables, load it at runtime (e.g. process.env.SECRET_NAME or your framework's env API) and use that variable in code.`;
+}
+
+const GITLEAKS_SUMMARY =
+  "A secret (e.g. API key, password, or token) was found in your code. Remove it immediately, store it in environment variables or a secrets manager, and rotate the credential if it was ever exposed.";
+
 /** Safe fallback when LLM is unavailable. Scan still completes. */
 export const FALLBACK_SUMMARY =
   "This finding may indicate a security issue. Review the details and consider applying the recommended fix.";
@@ -127,9 +175,21 @@ export async function enrichFindingsOnce(findings: ReportFinding[]): Promise<Sto
   const generatedAt = new Date().toISOString();
   if (findings.length === 0) return [];
 
+  const platform = inferHostingPlatform(findings);
   const needLlm: number[] = [];
   const baseStored: EnrichmentRow[] = findings.map((f, idx): EnrichmentRow => {
     const detailsText = f.explanation ?? "";
+    // Gitleaks (secrets): use dedicated summary and platform-aware fix prompt; no LLM.
+    if (f.scanner === "gitleaks") {
+      return {
+        ...f,
+        summaryText: GITLEAKS_SUMMARY,
+        detailsText,
+        fixPrompt: getSecretsFixPrompt(platform, f.file, f.line),
+        generatedBy: "rules" as GeneratedBy,
+        generatedAt,
+      };
+    }
     const curated = getCuratedSummary(f.checkId ?? "");
     if (curated) {
       return {

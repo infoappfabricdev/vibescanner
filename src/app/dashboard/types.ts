@@ -13,7 +13,7 @@ export type StoredFinding = ReportFinding & {
 export type NormalizedFinding = {
   id: string;
   scanner: string;
-  severity: "high" | "medium" | "low";
+  severity: "critical" | "high" | "medium" | "low";
   title: string;
   /** Short, novice-friendly summary for the card (1–2 sentences). */
   summaryText: string;
@@ -45,7 +45,7 @@ export type FindingState = {
   updatedAt?: string;
 };
 
-const SEVERITY_MAP = { high: "high", medium: "medium", low: "low", info: "low" } as const;
+const SEVERITY_MAP = { critical: "critical", high: "high", medium: "medium", low: "low", info: "low" } as const;
 
 function defaultFixPrompt(f: { title: string; filePath: string; line: number | null; severity: string }): string {
   const loc = f.line != null ? `${f.filePath}:${f.line}` : f.filePath;
@@ -83,9 +83,10 @@ export function mapReportFindingsToNormalized(
       f.summaryText != null && f.summaryText !== ""
         ? f.summaryText
         : getSummaryText(f.checkId ?? null, detailsText);
+    const scanner = f.scanner ?? "semgrep";
     return {
-      id: `semgrep-${scanId}-${idx}`,
-      scanner: "semgrep",
+      id: `${scanner}-${scanId}-${idx}`,
+      scanner,
       severity,
       title: f.title,
       summaryText,
