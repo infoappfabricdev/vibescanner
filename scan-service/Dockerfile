@@ -3,10 +3,10 @@ FROM semgrep/semgrep:latest
 
 WORKDIR /app
 
-# Install wget for fetching Gitleaks; then install Gitleaks by arch.
+# Install wget for fetching Gitleaks (Semgrep base image is Alpine — use apk).
 ARG GITLEAKS_VERSION=8.30.0
 ARG TARGETARCH
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache wget ca-certificates
 RUN case "${TARGETARCH}" in \
       amd64) ARCH="x64" ;; \
       arm64) ARCH="arm64" ;; \
