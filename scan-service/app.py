@@ -17,7 +17,18 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB max upload
 GITLEAKS_SEVERITY = "critical"
 
 
-def normalize_semgrep_result(r):
+def path_relative_to_work(path, work_dir):
+    """Strip work_dir prefix so path is relative to project root (extracted zip)."""
+    if not path or not work_dir:
+        return path or ""
+    path = path if isinstance(path, str) else str(path)
+    work = work_dir.rstrip(os.sep)
+    if path == work or path.startswith(work + os.sep):
+        return path[len(work) + 1 :] if len(path) > len(work) else path[len(work) :]
+    return path
+
+
+def normalize_semgrep_result(r, work_dir=None):
     """Turn one Semgrep result into a unified finding dict."""
     extra = r.get("extra") or {}
     severity = (extra.get("severity") or "medium").lower()
@@ -27,10 +38,12 @@ def normalize_semgrep_result(r):
         severity = "medium"
     else:
         severity = "low"
+    raw_path = r.get("path") or ""
+    path = path_relative_to_work(raw_path, work_dir) if work_dir else raw_path
     return {
         "scanner": "semgrep",
         "check_id": r.get("check_id") or "",
-        "path": r.get("path") or "",
+        "path": path,
         "start": {"line": r.get("start", {}).get("line") if isinstance(r.get("start"), dict) else None},
         "extra": {
             "message": extra.get("message") or "",
@@ -39,10 +52,11 @@ def normalize_semgrep_result(r):
     }
 
 
-def normalize_gitleaks_finding(f):
+def normalize_gitleaks_finding(f, work_dir=None):
     """Turn one Gitleaks finding into a unified finding dict. Gitleaks = critical."""
     # Gitleaks JSON: RuleID, Description, File, StartLine or Line, etc.
-    path = f.get("File") or f.get("file") or ""
+    raw_path = f.get("File") or f.get("file") or ""
+    path = path_relative_to_work(raw_path, work_dir) if work_dir else raw_path
     line = f.get("StartLine") or f.get("Line") or f.get("line")
     if line is not None:
         try:
@@ -85,7 +99,7 @@ def run_semgrep(work_dir):
         results = data.get("results") or []
         if not isinstance(results, list):
             results = []
-        findings = [normalize_semgrep_result(r) for r in results]
+        findings = [normalize_semgrep_result(r, work_dir) for r in results]
         success = result.returncode in (0, 1)
         return success, findings, data
     except subprocess.TimeoutExpired:
@@ -113,7 +127,7 @@ def run_gitleaks(work_dir):
                 raw_list = []
         except json.JSONDecodeError:
             raw_list = []
-        findings = [normalize_gitleaks_finding(f) for f in raw_list]
+        findings = [normalize_gitleaks_finding(f, work_dir) for f in raw_list]
         # Exit 1 = findings found (success); 0 = no findings; 2 = error
         success = result.returncode in (0, 1)
         return success, findings, raw_list

@@ -51,6 +51,13 @@ export interface ReportFinding {
   scanner?: "semgrep" | "gitleaks";
 }
 
+/** Strip /tmp/vibescan-.../ prefix so only the project-relative path is shown. */
+function stripTempDirPrefix(path: string): string {
+  if (!path || typeof path !== "string") return path;
+  const match = path.match(/^\/tmp\/vibescan-[^/]+\/(.*)$/);
+  return match ? match[1] : path;
+}
+
 /** Turn a technical rule id into a short, readable title. */
 function toTitle(checkId: string, message?: string): string {
   if (message && message.length < 80) return message;
@@ -170,7 +177,7 @@ function oneFindingFromUnified(u: UnifiedFinding): ReportFinding {
     scanner === "gitleaks"
       ? "Remove the secret from the code immediately. Store it in environment variables or a secrets manager and rotate the credential if it was ever committed."
       : toFixSuggestion(extra as SemgrepExtra);
-  const file = (u.path ?? "").toString();
+  const file = stripTempDirPrefix((u.path ?? "").toString());
   const line = u.start?.line ?? null;
   const finding = {
     checkId,
@@ -225,7 +232,7 @@ export function buildReport(apiResponse: Record<string, unknown>): ReportFinding
     const explanation = toExplanation(message, checkId);
     const whyItMatters = toWhyItMatters(extra.severity, extra.metadata);
     const fixSuggestion = toFixSuggestion(extra);
-    const file = r.path;
+    const file = stripTempDirPrefix(r.path ?? "");
     const line = r.start?.line ?? null;
     const severity = normalizeSeverity(extra.severity);
     const finding: ReportFinding = {
