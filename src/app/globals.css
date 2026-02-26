@@ -83,6 +83,19 @@ p {
   max-width: 42rem;
 }
 
+/* Homepage comparison: two columns (bad vs good), stack on mobile */
+.comparison-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .comparison-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Nav container: same max-width and padding on all routes */
 .nav-container {
   max-width: 1120px;
