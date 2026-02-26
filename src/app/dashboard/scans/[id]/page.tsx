@@ -120,7 +120,8 @@ export default async function ScanReportPage({
           </Link>
         </p>
         <h1 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>
-          {(scan as { project_name?: string | null }).project_name?.trim() || "Untitled Scan"}
+          {(scan as { project_name?: string | null }).project_name?.trim() ||
+            new Date(scan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
         </h1>
         <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
           {new Date(scan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}

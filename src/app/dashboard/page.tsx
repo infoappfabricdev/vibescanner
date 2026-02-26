@@ -365,7 +365,7 @@ export default async function DashboardPage() {
                     <p style={{ margin: "0 0 0.25rem", color: "var(--text)", fontWeight: 500 }}>
                       {(lastScan.project_name && lastScan.project_name.trim())
                         ? `${lastScan.project_name.trim()} — ${new Date(lastScan.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(lastScan.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`
-                        : `Untitled Scan — ${new Date(lastScan.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(lastScan.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`}
+                        : new Date(lastScan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                     </p>
                     <p style={{ margin: "0 0 0.25rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
                       {lastScan.finding_count} finding{lastScan.finding_count !== 1 ? "s" : ""}
@@ -500,7 +500,7 @@ export default async function DashboardPage() {
                         <span style={{ fontWeight: 500, fontSize: "0.9375rem" }}>
                           {(s.project_name && s.project_name.trim())
                             ? `${s.project_name.trim()} — ${new Date(s.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(s.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`
-                            : `Untitled Scan — ${new Date(s.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} at ${new Date(s.created_at).toLocaleTimeString(undefined, { timeStyle: "short" })}`}
+                            : new Date(s.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                         </span>
                         <span style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" } satisfies React.CSSProperties}>
                           {hasCritical && (

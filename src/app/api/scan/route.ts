@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   const projectName =
     typeof rawProjectName === "string" && rawProjectName.trim()
       ? rawProjectName.trim()
-      : null;
+      : `${user.email ?? "User"} — ${new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
   const buf = Buffer.from(await file.arrayBuffer());
   if (buf.length === 0) {
     return NextResponse.json(
