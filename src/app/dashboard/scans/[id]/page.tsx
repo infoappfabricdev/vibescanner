@@ -77,7 +77,14 @@ export default async function ScanReportPage({
         )}
 
         {hasFindings ? (
-          findings.map((f, i) => <ReportFindingCard key={`${f.file}-${f.line}-${i}`} f={f} index={i} />)
+          findings.map((f, i) => (
+            <ReportFindingCard
+              key={findingsRows != null && findingsRows[i] ? (findingsRows[i] as FindingRow).id : `${f.file}-${f.line}-${i}`}
+              f={f}
+              index={i}
+              findingId={findingsRows != null && findingsRows[i] ? (findingsRows[i] as FindingRow).id : undefined}
+            />
+          ))
         ) : (
           <p style={{ fontSize: "1.0625rem", color: "var(--success)", fontWeight: 500 }}>
             No security issues were found in this scan.

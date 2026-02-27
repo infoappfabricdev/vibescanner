@@ -66,12 +66,24 @@ export const FALLBACK_SUMMARY =
 
 export type GeneratedBy = "rules" | "llm" | "rules_fallback";
 
+export type FalsePositiveLikelihood = "confirmed_issue" | "possible_fp" | "likely_fp";
+
+/** One row from false_positive_patterns (active only). */
+export type FalsePositivePattern = {
+  rule_id: string;
+  context_clue: string | null;
+  explanation: string | null;
+  confidence: string | null;
+};
+
 /** Stored finding: report fields + generated fields persisted in DB. */
 export type StoredFinding = ReportFinding & {
   summaryText: string;
   detailsText: string;
   generatedBy: GeneratedBy;
   generatedAt: string;
+  false_positive_likelihood?: FalsePositiveLikelihood | null;
+  false_positive_reason?: string | null;
 };
 
 /** Mutable row during enrichment; summaryText/generatedBy filled before return. */
@@ -80,23 +92,48 @@ type EnrichmentRow = ReportFinding & {
   generatedAt: string;
   summaryText?: string;
   generatedBy?: GeneratedBy;
+  false_positive_likelihood?: FalsePositiveLikelihood | null;
+  false_positive_reason?: string | null;
+};
+
+function patternMatchesFinding(pattern: FalsePositivePattern, finding: ReportFinding): boolean {
+  const ruleMatch = (finding.checkId ?? "") === pattern.rule_id || pattern.rule_id === "";
+  if (!ruleMatch) return false;
+  if (pattern.context_clue == null || pattern.context_clue.trim() === "") return true;
+  const filePath = (finding.file ?? "").toLowerCase();
+  return filePath.includes(pattern.context_clue.trim().toLowerCase());
+}
+
+function confidenceToLikelihood(confidence: string | null): FalsePositiveLikelihood {
+  const c = (confidence ?? "").toLowerCase();
+  if (c === "possible" || c === "possible_fp") return "possible_fp";
+  if (c === "likely" || c === "likely_fp") return "likely_fp";
+  return "likely_fp";
+}
+
+type LlmFindingResult = {
+  index: number;
+  summaryText: string;
+  fixPrompt: string;
+  falsePositiveLikelihood: FalsePositiveLikelihood;
+  falsePositiveReason: string | null;
 };
 
 /**
  * One batch LLM request: input indices and findings, return array of
- * { index, summaryText, fixPrompt } or null on any failure.
+ * { index, summaryText, fixPrompt, falsePositiveLikelihood, falsePositiveReason } or null on any failure.
  */
 async function batchLlmSummaries(
   findings: ReportFinding[],
   indices: number[]
-): Promise<Array<{ index: number; summaryText: string; fixPrompt: string }> | null> {
+): Promise<Array<LlmFindingResult> | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey || indices.length === 0) return null;
 
   const list = indices
     .map((i) => {
       const f = findings[i];
-      return `[${i}] title: ${f.title}, file: ${f.file}, line: ${f.line ?? "n/a"}\nexplanation: ${f.explanation}\nwhyItMatters: ${f.whyItMatters}\nfixSuggestion: ${f.fixSuggestion}`;
+      return `[${i}] rule_id: ${f.checkId ?? "n/a"}, scanner: ${f.scanner ?? "semgrep"}, title: ${f.title}, file: ${f.file}, line: ${f.line ?? "n/a"}\nexplanation: ${f.explanation}\nwhyItMatters: ${f.whyItMatters}\nfixSuggestion: ${f.fixSuggestion}`;
     })
     .join("\n\n");
 
@@ -111,6 +148,10 @@ async function batchLlmSummaries(
 - What a secure solution should achieve: the outcome (what should be true after a fix), not specific code
 - Close with these instructions to the AI: "Before making any changes, please: 1) Explain what you think is causing this issue in my specific code, 2) Suggest 2-3 possible approaches to fix it, 3) Tell me if any approach might affect other parts of my app, 4) Wait for my confirmation before making any changes."
 
+3) A false positive assessment: given the rule_id, file path, scanner, and explanation, assess whether this finding might be a false positive (e.g. test code, example, known safe pattern). Use:
+- "falsePositiveLikelihood": one of "confirmed_issue" (real issue, not a false positive), "possible_fp" (might be a false positive), "likely_fp" (likely a false positive).
+- "falsePositiveReason": if possible_fp or likely_fp, a brief reason (one sentence); otherwise null.
+
 Findings (index is the number in brackets):
 
 ${list}
@@ -118,9 +159,11 @@ ${list}
 Respond with ONLY a valid JSON array. One object per finding, in the same order as above. Each object must have:
 - "index" (number): the finding index from the list
 - "summaryText" (string): short plain-English summary for the card
-- "fixPrompt" (string): the advisory prompt in the structure above (opening, what was found, file/location, security context, what secure solution should achieve, closing instructions)
+- "fixPrompt" (string): the advisory prompt in the structure above
+- "falsePositiveLikelihood" (string): "confirmed_issue" or "possible_fp" or "likely_fp"
+- "falsePositiveReason" (string or null): brief reason if possible_fp/likely_fp, else null
 
-Example: [{"index":0,"summaryText":"...","fixPrompt":"..."}]
+Example: [{"index":0,"summaryText":"...","fixPrompt":"...","falsePositiveLikelihood":"confirmed_issue","falsePositiveReason":null}]
 No markdown, no explanation.`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -157,7 +200,8 @@ No markdown, no explanation.`;
     return null;
   }
   if (!Array.isArray(parsed) || parsed.length !== indices.length) return null;
-  const result: Array<{ index: number; summaryText: string; fixPrompt: string }> = [];
+  const validLikelihoods: FalsePositiveLikelihood[] = ["confirmed_issue", "possible_fp", "likely_fp"];
+  const result: LlmFindingResult[] = [];
   for (const item of parsed) {
     if (
       item == null ||
@@ -168,19 +212,42 @@ No markdown, no explanation.`;
     ) {
       return null;
     }
-    const o = item as { index: number; summaryText: string; fixPrompt: string };
+    const o = item as {
+      index: number;
+      summaryText: string;
+      fixPrompt: string;
+      falsePositiveLikelihood?: string;
+      falsePositiveReason?: string | null;
+    };
     if (!indices.includes(o.index)) return null;
-    result.push(o);
+    const likelihood = validLikelihoods.includes((o.falsePositiveLikelihood as FalsePositiveLikelihood) ?? "")
+      ? (o.falsePositiveLikelihood as FalsePositiveLikelihood)
+      : "confirmed_issue";
+    const reason =
+      typeof o.falsePositiveReason === "string" && o.falsePositiveReason.trim()
+        ? o.falsePositiveReason.trim()
+        : null;
+    result.push({
+      index: o.index,
+      summaryText: o.summaryText,
+      fixPrompt: o.fixPrompt,
+      falsePositiveLikelihood: likelihood,
+      falsePositiveReason: reason,
+    });
   }
   return result;
 }
 
 /**
- * Enrich report findings with summaryText, detailsText, fixPrompt, generatedBy, generatedAt.
+ * Enrich report findings with summaryText, detailsText, fixPrompt, generatedBy, generatedAt,
+ * and optional false_positive_likelihood / false_positive_reason (from patterns first, then Claude).
  * Uses rule-based summaries first (80–90% coverage); batches the rest into ONE LLM call.
  * If LLM fails, uses FALLBACK_SUMMARY so the scan still completes.
  */
-export async function enrichFindingsOnce(findings: ReportFinding[]): Promise<StoredFinding[]> {
+export async function enrichFindingsOnce(
+  findings: ReportFinding[],
+  patterns: FalsePositivePattern[] = []
+): Promise<StoredFinding[]> {
   const generatedAt = new Date().toISOString();
   if (findings.length === 0) return [];
 
@@ -217,19 +284,35 @@ export async function enrichFindingsOnce(findings: ReportFinding[]): Promise<Sto
     };
   });
 
-  if (needLlm.length === 0) {
-    return baseStored as StoredFinding[];
+  // Apply rule-based false positive patterns: set FP on any finding that matches a pattern.
+  for (let i = 0; i < baseStored.length; i++) {
+    const row = baseStored[i];
+    const finding = findings[i];
+    if (!finding) continue;
+    for (const pattern of patterns) {
+      if (patternMatchesFinding(pattern, finding)) {
+        row.false_positive_likelihood = confidenceToLikelihood(pattern.confidence);
+        row.false_positive_reason = pattern.explanation?.trim() || null;
+        break;
+      }
+    }
   }
 
-  const llmResult = await batchLlmSummaries(findings, needLlm);
+  if (needLlm.length > 0) {
+    const llmResult = await batchLlmSummaries(findings, needLlm);
 
-  if (llmResult) {
-    for (const { index, summaryText, fixPrompt } of llmResult) {
-      const row = baseStored[index];
-      if (row) {
-        row.summaryText = summaryText;
-        row.fixPrompt = fixPrompt?.trim() || row.fixPrompt;
-        row.generatedBy = "llm";
+    if (llmResult) {
+      for (const { index, summaryText, fixPrompt, falsePositiveLikelihood, falsePositiveReason } of llmResult) {
+        const row = baseStored[index];
+        if (row) {
+          row.summaryText = summaryText;
+          row.fixPrompt = fixPrompt?.trim() || row.fixPrompt;
+          row.generatedBy = "llm";
+          if (row.false_positive_likelihood == null) {
+            row.false_positive_likelihood = falsePositiveLikelihood;
+            row.false_positive_reason = falsePositiveReason;
+          }
+        }
       }
     }
   }

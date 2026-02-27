@@ -4,12 +4,18 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
+import type { FalsePositiveLikelihood } from "@/app/dashboard/types";
 import { createClient } from "@/lib/supabase/client";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import CopyFixPromptButton, { FixPromptDisclaimer } from "@/components/ui/CopyFixPromptButton";
 
-function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
+type FindingWithFP = ReportFinding & {
+  false_positive_likelihood?: FalsePositiveLikelihood | null;
+  false_positive_reason?: string | null;
+};
+
+function FindingCard({ f, index }: { f: FindingWithFP; index: number }) {
   const severityColors: Record<string, string> = {
     critical: "#b91c1c",
     high: "var(--danger)",
@@ -17,17 +23,22 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
     low: "var(--warn)",
     info: "var(--brand)",
   };
-  const color = severityColors[f.severity] ?? "var(--text-muted)";
+  const fpLikelihood = f.false_positive_likelihood ?? null;
+  const isPossibleOrLikelyFp =
+    fpLikelihood === "possible_fp" || fpLikelihood === "likely_fp";
+  const borderColor = isPossibleOrLikelyFp
+    ? "#2563eb"
+    : severityColors[f.severity] ?? "var(--text-muted)";
   const scannerLabel = f.scanner === "gitleaks" ? "Gitleaks" : "Semgrep";
 
   return (
     <section
       style={{
-        border: `1px solid ${color}`,
+        border: `1px solid ${borderColor}`,
         borderRadius: "12px",
         padding: "1.5rem 1.75rem",
         marginBottom: "1.25rem",
-        background: "#ffffff",
+        background: isPossibleOrLikelyFp ? "rgba(37, 99, 235, 0.04)" : "#ffffff",
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
       }}
     >
@@ -37,7 +48,7 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
             fontSize: "0.75rem",
             fontWeight: 600,
             textTransform: "uppercase",
-            color,
+            color: borderColor,
           }}
         >
           {f.severity}
@@ -59,6 +70,48 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
           {f.line != null ? ` (line ${f.line})` : ""}
         </span>
       </div>
+      {fpLikelihood === "likely_fp" && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: "#2563eb",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "4px",
+              background: "rgba(37, 99, 235, 0.12)",
+            }}
+          >
+            Likely false positive
+          </span>
+          {f.false_positive_reason && (
+            <p style={{ margin: "0.35rem 0 0", fontSize: "0.875rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+              {f.false_positive_reason}
+            </p>
+          )}
+        </div>
+      )}
+      {fpLikelihood === "possible_fp" && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: "#2563eb",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "4px",
+              background: "rgba(37, 99, 235, 0.12)",
+            }}
+          >
+            Possibly false positive
+          </span>
+          {f.false_positive_reason && (
+            <p style={{ margin: "0.35rem 0 0", fontSize: "0.875rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+              {f.false_positive_reason}
+            </p>
+          )}
+        </div>
+      )}
       <h3 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>{f.title}</h3>
       <p style={{ margin: "0 0 0.75rem", lineHeight: 1.625, color: "var(--text)" }}>
         {f.explanation}

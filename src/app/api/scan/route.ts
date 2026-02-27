@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
-import { enrichFindingsOnce, type StoredFinding } from "@/lib/enrich-findings-once";
+import { enrichFindingsOnce, type StoredFinding, type FalsePositivePattern } from "@/lib/enrich-findings-once";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ function countSeverities(findings: ReportFinding[]) {
 const now = () => new Date().toISOString();
 
 /**
- * Insert enriched findings into the findings table (project_id, scan_id, core + Option A enrichment columns).
+ * Insert enriched findings into the findings table (project_id, scan_id, core + Option A enrichment columns + FP).
  */
 async function insertFindingsRows(
   admin: SupabaseClient,
@@ -86,8 +86,8 @@ async function insertFindingsRows(
     explanation: f.explanation ?? "",
     severity: f.severity ?? "low",
     status: "open",
-    false_positive_likelihood: null,
-    false_positive_reason: null,
+    false_positive_likelihood: f.false_positive_likelihood ?? null,
+    false_positive_reason: f.false_positive_reason ?? null,
     first_seen_at: now(),
     last_seen_at: now(),
     resolved_at: null,
@@ -186,9 +186,13 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
       const data = await res.json().catch(() => ({ error: "Scan service returned invalid JSON" }));
       let findings = buildReport(data as Record<string, unknown>);
-      // LLM runs once per scan; dashboard never calls LLM. Enrich and persist here.
       if (findings.length > 0) {
-        findings = await enrichFindingsOnce(findings);
+        const { data: patternRows } = await admin
+          .from("false_positive_patterns")
+          .select("rule_id, context_clue, explanation, confidence")
+          .eq("active", true);
+        const patterns = (patternRows ?? []) as FalsePositivePattern[];
+        findings = await enrichFindingsOnce(findings, patterns);
       }
       (data as Record<string, unknown>).report = findings;
       const { critical, high, medium, low } = countSeverities(findings);
@@ -286,9 +290,13 @@ export async function POST(request: NextRequest) {
       stderr: stderr || undefined,
     };
     let findings = buildReport(response);
-    // LLM runs once per scan; dashboard never calls LLM. Enrich and persist here.
     if (findings.length > 0) {
-      findings = await enrichFindingsOnce(findings);
+      const { data: patternRows } = await admin
+        .from("false_positive_patterns")
+        .select("rule_id, context_clue, explanation, confidence")
+        .eq("active", true);
+      const patterns = (patternRows ?? []) as FalsePositivePattern[];
+      findings = await enrichFindingsOnce(findings, patterns);
     }
     response.report = findings;
     const { critical, high, medium, low } = countSeverities(findings);

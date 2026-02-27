@@ -26,12 +26,17 @@ export type FindingRow = {
   fix_suggestion: string | null;
 };
 
+/** False positive likelihood from rules or Claude. */
+export type FalsePositiveLikelihood = "confirmed_issue" | "possible_fp" | "likely_fp";
+
 /** Stored finding from DB (has summaryText, detailsText, generatedBy, generatedAt). Dashboard uses these only; no LLM. */
 export type StoredFinding = ReportFinding & {
   summaryText?: string;
   detailsText?: string;
   generatedBy?: string;
   generatedAt?: string;
+  false_positive_likelihood?: FalsePositiveLikelihood | null;
+  false_positive_reason?: string | null;
 };
 
 /** Normalized finding shape for dashboard (supports multiple scanners). */
@@ -89,6 +94,8 @@ export function findingsRowsToStoredFindings(rows: FindingRow[]): StoredFinding[
     scanner: r.scanner as "semgrep" | "gitleaks",
     summaryText: r.summary_text ?? undefined,
     detailsText: r.details_text ?? undefined,
+    false_positive_likelihood: (r.false_positive_likelihood as FalsePositiveLikelihood | null) ?? undefined,
+    false_positive_reason: r.false_positive_reason ?? undefined,
   }));
 }
 
