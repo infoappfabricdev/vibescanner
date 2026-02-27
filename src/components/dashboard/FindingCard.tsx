@@ -54,8 +54,14 @@ type Props = {
 const severityColor = (s: string) =>
   s === "critical" ? "#b91c1c" : s === "high" ? "var(--danger)" : s === "medium" ? "var(--warn)" : "#6b7280";
 
-const borderColor = (s: string) =>
+const severityBorderColor = (s: string) =>
   s === "critical" ? "#b91c1c" : s === "high" ? "var(--danger)" : s === "medium" ? "#eab308" : "#9ca3af";
+
+const borderColor = (finding: NormalizedFinding) => {
+  const fp = finding.false_positive_likelihood ?? null;
+  if (fp === "likely_fp" || fp === "possible_fp") return "#2563eb";
+  return severityBorderColor(finding.severity);
+};
 
 export default function FindingCard({
   finding,
@@ -145,6 +151,9 @@ export default function FindingCard({
       ? notes.slice(0, NOTES_PREVIEW_TRUNCATE).trim() + "\u2026"
       : notes;
 
+  const fpLikelihood = finding.false_positive_likelihood ?? null;
+  const isPossibleOrLikelyFp = fpLikelihood === "possible_fp" || fpLikelihood === "likely_fp";
+
   return (
     <div
       className="dashboard-issue-card"
@@ -153,8 +162,8 @@ export default function FindingCard({
         borderRadius: "12px",
         border: "1px solid var(--border)",
         borderLeftWidth: "4px",
-        borderLeftColor: borderColor(finding.severity),
-        background: "#f9fafb",
+        borderLeftColor: borderColor(finding),
+        background: isPossibleOrLikelyFp ? "rgba(37, 99, 235, 0.04)" : "#f9fafb",
       }}
     >
       <div
@@ -167,6 +176,27 @@ export default function FindingCard({
         }}
       >
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
+          {(fpLikelihood === "likely_fp" || fpLikelihood === "possible_fp") && (
+            <div style={{ marginBottom: "0.5rem" }}>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: "#2563eb",
+                  padding: "0.2rem 0.5rem",
+                  borderRadius: "4px",
+                  background: "rgba(37, 99, 235, 0.12)",
+                }}
+              >
+                {fpLikelihood === "likely_fp" ? "Likely false positive" : "Possibly false positive"}
+              </span>
+              {finding.false_positive_reason && (
+                <p style={{ margin: "0.35rem 0 0", fontSize: "0.875rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                  {finding.false_positive_reason}
+                </p>
+              )}
+            </div>
+          )}
           <div
             style={{
               display: "flex",

@@ -59,6 +59,10 @@ export type NormalizedFinding = {
   whyItMatters?: string;
   /** Suggested fix text (from report). */
   fixSuggestion?: string;
+  /** False positive likelihood from rules or Claude. */
+  false_positive_likelihood?: FalsePositiveLikelihood | null;
+  /** Reason when possible_fp or likely_fp. */
+  false_positive_reason?: string | null;
 };
 
 /** Resolution status for an issue. */
@@ -154,6 +158,8 @@ export function mapReportFindingsToNormalized(
       detailsUrl,
       whyItMatters: f.whyItMatters || undefined,
       fixSuggestion: f.fixSuggestion || undefined,
+      false_positive_likelihood: f.false_positive_likelihood ?? undefined,
+      false_positive_reason: f.false_positive_reason ?? undefined,
     };
   });
 }
