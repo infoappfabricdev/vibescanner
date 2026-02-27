@@ -132,7 +132,7 @@ Run migrations in Supabase Dashboard → SQL Editor. For existing DBs, use the `
 | `src/app/api/verify-session/route.ts` | Verify Stripe session paid |
 | `src/app/api/verify-coupon/route.ts` | Verify coupon token |
 | `src/app/api/webhooks/stripe/route.ts` | checkout.session.completed → grantCreditForStripeSession |
-| `src/app/api/project-names/route.ts` | GET distinct project_name from user’s scans (most recent first) |
+| `src/app/api/projects/route.ts` | GET distinct project_name from user’s scans (see projects table, ordered by most recently used) |
 | `src/app/api/grant-coupon-credit/route.ts` | Grant credit for valid coupon (if configured) |
 
 ### Lib and shared logic

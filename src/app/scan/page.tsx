@@ -104,8 +104,9 @@ function ScanPageContent() {
   const router = useRouter();
   const sessionId = searchParams.get("session_id");
   const [ready, setReady] = useState(false);
-  const [previousProjectNames, setPreviousProjectNames] = useState<string[]>([]);
-  const [projectName, setProjectName] = useState("");
+  const [projects, setProjects] = useState<{ id: string; name: string; created_at: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState("");
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -151,10 +152,10 @@ function ScanPageContent() {
         return;
       }
 
-      const namesRes = await fetch("/api/project-names");
-      if (!cancelled && namesRes.ok) {
-        const namesData = (await namesRes.json()) as { projectNames?: string[] };
-        setPreviousProjectNames(Array.isArray(namesData.projectNames) ? namesData.projectNames : []);
+      const projectsRes = await fetch("/api/projects");
+      if (!cancelled && projectsRes.ok) {
+        const projectsData = (await projectsRes.json()) as { projects?: { id: string; name: string; created_at: string }[] };
+        setProjects(Array.isArray(projectsData.projects) ? projectsData.projects : []);
       }
       if (!cancelled) setReady(true);
     }
@@ -178,7 +179,11 @@ function ScanPageContent() {
     try {
       const formData = new FormData();
       formData.set("file", file);
-      formData.set("project_name", projectName.trim() || "");
+      if (selectedProjectId) {
+        formData.set("project_id", selectedProjectId);
+      } else {
+        formData.set("project_name", newProjectName.trim() || "");
+      }
       formData.set("notes", notes.trim() || "");
 
       const res = await fetch("/api/scan", {
@@ -249,24 +254,29 @@ function ScanPageContent() {
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%", maxWidth: "24rem" }}>
-              <label htmlFor="scan-project-name" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
-                Project name
+              <label htmlFor="scan-project" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
+                Project
               </label>
-              <input
-                id="scan-project-name"
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="My Lovable App"
-                list={previousProjectNames.length > 0 ? "scan-project-name-list" : undefined}
+              <select
+                id="scan-project"
+                value={selectedProjectId ?? ""}
+                onChange={(e) => setSelectedProjectId(e.target.value || null)}
                 style={{ fontSize: "0.9375rem", padding: "0.5rem 0.75rem", border: "1px solid var(--border)", borderRadius: "8px" }}
-              />
-              {previousProjectNames.length > 0 && (
-                <datalist id="scan-project-name-list">
-                  {previousProjectNames.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
+              >
+                <option value="">New project...</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {selectedProjectId === null && (
+                <input
+                  id="scan-new-project-name"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="My Lovable App"
+                  style={{ fontSize: "0.9375rem", padding: "0.5rem 0.75rem", border: "1px solid var(--border)", borderRadius: "8px", marginTop: "0.25rem" }}
+                />
               )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%", maxWidth: "24rem" }}>
@@ -294,9 +304,9 @@ function ScanPageContent() {
                   const f = e.target.files?.[0] ?? null;
                   setFile(f);
                   setError(null);
-                  if (f?.name) {
+                  if (f?.name && selectedProjectId === null) {
                     const base = f.name.toLowerCase().endsWith(".zip") ? f.name.slice(0, -4) : f.name;
-                    setProjectName((prev) => (prev.trim() === "" ? base : prev));
+                    setNewProjectName((prev) => (prev.trim() === "" ? base : prev));
                   }
                 }}
                 style={{ fontSize: "0.9375rem" }}

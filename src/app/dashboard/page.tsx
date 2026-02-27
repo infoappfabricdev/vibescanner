@@ -7,7 +7,7 @@ import Card from "@/components/ui/Card";
 import { ButtonPrimary, ButtonSecondary } from "@/components/ui/Button";
 import DashboardClient from "@/app/dashboard/DashboardClient";
 import TopIssuesSection from "./TopIssuesSection";
-import { mapReportFindingsToNormalized, type StoredFinding } from "./types";
+import { mapReportFindingsToNormalized, findingsRowsToStoredFindings, type StoredFinding, type FindingRow } from "./types";
 
 type ScanRow = {
   id: string;
@@ -106,6 +106,24 @@ export default async function DashboardPage() {
   const scans = (scansRows ?? []) as ScanRow[];
   const lastScan = scans[0] ?? null;
 
+  let lastScanFindings: StoredFinding[];
+  let lastScanFindingIds: string[] | undefined;
+  if (lastScan) {
+    const { data: findingsRows } = await supabase
+      .from("findings")
+      .select("id, project_id, scan_id, rule_id, scanner, file_path, line, title, explanation, severity, status, false_positive_likelihood, false_positive_reason, first_seen_at, last_seen_at, resolved_at, summary_text, details_text, fix_prompt, why_it_matters, fix_suggestion")
+      .eq("scan_id", lastScan.id)
+      .order("first_seen_at", { ascending: true });
+    if (findingsRows != null && findingsRows.length > 0) {
+      lastScanFindings = findingsRowsToStoredFindings(findingsRows as FindingRow[]);
+      lastScanFindingIds = (findingsRows as FindingRow[]).map((r) => r.id);
+    } else {
+      lastScanFindings = (lastScan.findings ?? []) as StoredFinding[];
+    }
+  } else {
+    lastScanFindings = [];
+  }
+
   const latestScanSummary =
     lastScan === null
       ? null
@@ -123,11 +141,9 @@ export default async function DashboardPage() {
       ? 100
       : securityScore(lastScan.critical_count ?? 0, lastScan.high_count, lastScan.medium_count, lastScan.low_count);
   const scoreStatusResult = scoreStatus(score);
-  // Dashboard uses stored fields only; no LLM, no generation (see enrich-findings-once.ts).
-  const lastScanFindings = (lastScan?.findings ?? []) as StoredFinding[];
   const normalizedFindings =
     lastScan && lastScanReportHref
-      ? mapReportFindingsToNormalized(lastScan.id, lastScanReportHref, lastScanFindings)
+      ? mapReportFindingsToNormalized(lastScan.id, lastScanReportHref, lastScanFindings, lastScanFindingIds)
       : [];
 
   const banner = (() => {

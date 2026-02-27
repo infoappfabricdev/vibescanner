@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import Container from "@/components/ui/Container";
 import type { ReportFinding } from "@/lib/semgrep-report";
+import { findingsRowsToStoredFindings, type FindingRow } from "../../types";
 import ReportFindingCard from "./ReportFindingCard";
 
 export default async function ScanReportPage({
@@ -31,7 +32,16 @@ export default async function ScanReportPage({
     notFound();
   }
 
-  const findings = (scan.findings ?? []) as ReportFinding[];
+  const { data: findingsRows } = await supabase
+    .from("findings")
+    .select("id, project_id, scan_id, rule_id, scanner, file_path, line, title, explanation, severity, status, false_positive_likelihood, false_positive_reason, first_seen_at, last_seen_at, resolved_at, summary_text, details_text, fix_prompt, why_it_matters, fix_suggestion")
+    .eq("scan_id", id)
+    .order("first_seen_at", { ascending: true });
+
+  const findings: ReportFinding[] =
+    findingsRows != null && findingsRows.length > 0
+      ? findingsRowsToStoredFindings(findingsRows as FindingRow[])
+      : ((scan.findings ?? []) as ReportFinding[]);
   const hasFindings = findings.length > 0;
 
   return (

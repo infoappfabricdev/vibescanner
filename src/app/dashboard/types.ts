@@ -1,6 +1,31 @@
 import type { ReportFinding } from "@/lib/semgrep-report";
 import { getSummaryText } from "@/lib/finding-summary";
 
+/** One row from the findings table (relational schema). */
+export type FindingRow = {
+  id: string;
+  project_id: string;
+  scan_id: string;
+  rule_id: string | null;
+  scanner: string;
+  file_path: string;
+  line: number | null;
+  title: string;
+  explanation: string;
+  severity: string;
+  status: string;
+  false_positive_likelihood: string | null;
+  false_positive_reason: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  resolved_at: string | null;
+  summary_text: string | null;
+  details_text: string | null;
+  fix_prompt: string | null;
+  why_it_matters: string | null;
+  fix_suggestion: string | null;
+};
+
 /** Stored finding from DB (has summaryText, detailsText, generatedBy, generatedAt). Dashboard uses these only; no LLM. */
 export type StoredFinding = ReportFinding & {
   summaryText?: string;
@@ -47,6 +72,26 @@ export type FindingState = {
 
 const SEVERITY_MAP = { critical: "critical", high: "high", medium: "medium", low: "low", info: "low" } as const;
 
+/**
+ * Convert findings table rows to StoredFinding[] for use with mapReportFindingsToNormalized or report UI.
+ */
+export function findingsRowsToStoredFindings(rows: FindingRow[]): StoredFinding[] {
+  return rows.map((r) => ({
+    checkId: r.rule_id ?? undefined,
+    title: r.title,
+    explanation: r.explanation,
+    whyItMatters: r.why_it_matters ?? "",
+    fixSuggestion: r.fix_suggestion ?? "",
+    fixPrompt: r.fix_prompt ?? "",
+    file: r.file_path,
+    line: r.line,
+    severity: r.severity as ReportFinding["severity"],
+    scanner: r.scanner as "semgrep" | "gitleaks",
+    summaryText: r.summary_text ?? undefined,
+    detailsText: r.details_text ?? undefined,
+  }));
+}
+
 function defaultFixPrompt(f: { title: string; filePath: string; line: number | null; severity: string }): string {
   const loc = f.line != null ? `${f.filePath}:${f.line}` : f.filePath;
   return `Fix the following issue:
@@ -64,11 +109,13 @@ Apply the fix directly in code.`;
  * Uses stored summaryText/detailsText only; no generation, no LLM.
  * Do not import enrich-findings-once or any LLM/Anthropic module in dashboard code.
  * For legacy scans without stored fields, falls back to getSummaryText (client-safe heuristic).
+ * When findingIds is provided (e.g. from findings table rows), uses those for NormalizedFinding.id.
  */
 export function mapReportFindingsToNormalized(
   scanId: string,
   detailsUrl: string,
-  reportFindings: StoredFinding[]
+  reportFindings: StoredFinding[],
+  findingIds?: string[]
 ): NormalizedFinding[] {
   return reportFindings.map((f, idx) => {
     const severity = SEVERITY_MAP[f.severity] ?? "low";
@@ -84,8 +131,9 @@ export function mapReportFindingsToNormalized(
         ? f.summaryText
         : getSummaryText(f.checkId ?? null, detailsText);
     const scanner = f.scanner ?? "semgrep";
+    const id = findingIds && findingIds[idx] != null ? findingIds[idx]! : `${scanner}-${scanId}-${idx}`;
     return {
-      id: `${scanner}-${scanId}-${idx}`,
+      id,
       scanner,
       severity,
       title: f.title,
