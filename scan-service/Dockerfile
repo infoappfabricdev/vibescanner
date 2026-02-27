@@ -22,6 +22,11 @@ COPY requirements.txt .
 RUN python3 -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
+# Run as non-root for security.
+RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -D appuser
+RUN chown -R appuser:appgroup /app
+USER appuser
+
 # Railway/Fly set PORT; default 8080 for local.
 ENV PORT=8080
 EXPOSE 8080
