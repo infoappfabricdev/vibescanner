@@ -97,7 +97,9 @@ type EnrichmentRow = ReportFinding & {
 };
 
 function patternMatchesFinding(pattern: FalsePositivePattern, finding: ReportFinding): boolean {
-  const ruleMatch = (finding.checkId ?? "") === pattern.rule_id || pattern.rule_id === "";
+  const findingRuleId = (finding.checkId ?? "").trim();
+  const patternRuleId = (pattern.rule_id ?? "").trim();
+  const ruleMatch = findingRuleId === patternRuleId || patternRuleId === "";
   if (!ruleMatch) return false;
   if (pattern.context_clue == null || pattern.context_clue.trim() === "") return true;
   const filePath = (finding.file ?? "").toLowerCase();
