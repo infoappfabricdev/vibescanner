@@ -99,7 +99,7 @@ export default async function ScanReportPage({
 
   const { data: scan, error } = await supabase
     .from("scans")
-    .select("id, created_at, project_name, findings, finding_count, critical_count, high_count, medium_count, low_count")
+    .select("id, created_at, project_name, notes, findings, finding_count, critical_count, high_count, medium_count, low_count")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -123,7 +123,7 @@ export default async function ScanReportPage({
           {(scan as { project_name?: string | null }).project_name?.trim() ||
             new Date(scan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
         </h1>
-        <p style={{ color: "var(--text-muted)", margin: "0 0 1.5rem", fontSize: "0.9375rem" }}>
+        <p style={{ color: "var(--text-muted)", margin: "0 0 0.5rem", fontSize: "0.9375rem" }}>
           {new Date(scan.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
           {" · "}
           {scan.finding_count} finding{scan.finding_count !== 1 ? "s" : ""}
@@ -137,6 +137,11 @@ export default async function ScanReportPage({
             return parts.length > 0 ? ` (${parts.join(", ")})` : "";
           })()}
         </p>
+        {(scan as { notes?: string | null }).notes?.trim() && (
+          <p style={{ color: "var(--text)", margin: "0 0 1.5rem", fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+            {(scan as { notes?: string | null }).notes?.trim()}
+          </p>
+        )}
 
         {hasFindings ? (
           findings.map((f, i) => <FindingCard key={`${f.file}-${f.line}-${i}`} f={f} index={i} />)

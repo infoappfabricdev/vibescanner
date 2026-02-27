@@ -128,6 +128,7 @@ function ScanPageContent() {
   const [ready, setReady] = useState(false);
   const [previousProjectNames, setPreviousProjectNames] = useState<string[]>([]);
   const [projectName, setProjectName] = useState("");
+  const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -200,6 +201,7 @@ function ScanPageContent() {
       const formData = new FormData();
       formData.set("file", file);
       formData.set("project_name", projectName.trim() || "");
+      formData.set("notes", notes.trim() || "");
 
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -288,6 +290,19 @@ function ScanPageContent() {
                   ))}
                 </datalist>
               )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%", maxWidth: "24rem" }}>
+              <label htmlFor="scan-notes" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
+                What changed? (optional)
+              </label>
+              <textarea
+                id="scan-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g. Fixed JWT token issue, updated regex handling"
+                rows={3}
+                style={{ fontSize: "0.9375rem", padding: "0.5rem 0.75rem", border: "1px solid var(--border)", borderRadius: "8px", resize: "vertical", fontFamily: "inherit" }}
+              />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
               <label htmlFor="scan-file" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>

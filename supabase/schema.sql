@@ -3,6 +3,8 @@
 --   alter table public.scans add column if not exists critical_count int not null default 0;
 -- For project naming, run:
 --   alter table public.scans add column if not exists project_name text;
+-- For scan notes, run:
+--   alter table public.scans add column if not exists notes text;
 
 -- Credits balance per user (one row per user)
 create table if not exists public.scan_credits (
@@ -17,6 +19,7 @@ create table if not exists public.scans (
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
   project_name text,
+  notes text,
   findings jsonb not null default '[]',
   finding_count int not null default 0,
   critical_count int not null default 0,

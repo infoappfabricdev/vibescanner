@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
     typeof rawProjectName === "string" && rawProjectName.trim()
       ? rawProjectName.trim()
       : `${user.email ?? "User"} — ${new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+  const rawNotes = formData.get("notes");
+  const notes = typeof rawNotes === "string" && rawNotes.trim() ? rawNotes.trim() : null;
   const buf = Buffer.from(await file.arrayBuffer());
   if (buf.length === 0) {
     return NextResponse.json(
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
       await admin.from("scans").insert({
         user_id: user.id,
         project_name: projectName,
+        notes,
         findings: findings as unknown as Record<string, unknown>[],
         finding_count: findings.length,
         critical_count: critical,
@@ -199,6 +202,7 @@ export async function POST(request: NextRequest) {
     await admin.from("scans").insert({
       user_id: user.id,
       project_name: projectName,
+      notes,
       findings: findings as unknown as Record<string, unknown>[],
       finding_count: findings.length,
       critical_count: critical,
