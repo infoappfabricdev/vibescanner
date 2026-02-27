@@ -22,8 +22,8 @@ COPY requirements.txt .
 RUN python3 -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
-# Run as non-root for security.
-RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -D appuser
+# Run as non-root for security (let Alpine assign UID/GID to avoid conflict with base image).
+RUN addgroup appgroup && adduser -G appgroup -D appuser
 RUN chown -R appuser:appgroup /app
 USER appuser
 
