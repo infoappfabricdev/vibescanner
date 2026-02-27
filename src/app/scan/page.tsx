@@ -126,6 +126,7 @@ function ScanPageContent() {
   const router = useRouter();
   const sessionId = searchParams.get("session_id");
   const [ready, setReady] = useState(false);
+  const [previousProjectNames, setPreviousProjectNames] = useState<string[]>([]);
   const [projectName, setProjectName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -170,7 +171,13 @@ function ScanPageContent() {
         router.replace("/pricing");
         return;
       }
-      setReady(true);
+
+      const namesRes = await fetch("/api/project-names");
+      if (!cancelled && namesRes.ok) {
+        const namesData = (await namesRes.json()) as { projectNames?: string[] };
+        setPreviousProjectNames(Array.isArray(namesData.projectNames) ? namesData.projectNames : []);
+      }
+      if (!cancelled) setReady(true);
     }
 
     init();
@@ -271,8 +278,16 @@ function ScanPageContent() {
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="My Lovable App"
+                list={previousProjectNames.length > 0 ? "scan-project-name-list" : undefined}
                 style={{ fontSize: "0.9375rem", padding: "0.5rem 0.75rem", border: "1px solid var(--border)", borderRadius: "8px" }}
               />
+              {previousProjectNames.length > 0 && (
+                <datalist id="scan-project-name-list">
+                  {previousProjectNames.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
               <label htmlFor="scan-file" style={{ fontSize: "0.9375rem", fontWeight: 500, color: "var(--text)" }}>
