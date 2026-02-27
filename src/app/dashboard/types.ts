@@ -77,7 +77,7 @@ const SEVERITY_MAP = { critical: "critical", high: "high", medium: "medium", low
  */
 export function findingsRowsToStoredFindings(rows: FindingRow[]): StoredFinding[] {
   return rows.map((r) => ({
-    checkId: r.rule_id ?? undefined,
+    checkId: r.rule_id ?? "",
     title: r.title,
     explanation: r.explanation,
     whyItMatters: r.why_it_matters ?? "",
