@@ -6,11 +6,48 @@ import path from "path";
 import os from "os";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
-import { enrichFindingsOnce } from "@/lib/enrich-findings-once";
+import { enrichFindingsOnce, type StoredFinding } from "@/lib/enrich-findings-once";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
+
+/**
+ * Get project id for the user: by project_id (if valid and owned) or by get-or-create using project name.
+ */
+async function getOrCreateProjectId(
+  admin: SupabaseClient,
+  userId: string,
+  projectIdFromForm: string | null,
+  projectName: string
+): Promise<string> {
+  const trimmedId = typeof projectIdFromForm === "string" ? projectIdFromForm.trim() : "";
+  if (trimmedId) {
+    const { data: project } = await admin
+      .from("projects")
+      .select("id")
+      .eq("id", trimmedId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (project?.id) return project.id;
+  }
+  const name = projectName.trim() || "Unnamed project";
+  const { data: existing } = await admin
+    .from("projects")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("name", name)
+    .maybeSingle();
+  if (existing?.id) return existing.id;
+  const { data: inserted } = await admin
+    .from("projects")
+    .insert({ user_id: userId, name })
+    .select("id")
+    .single();
+  if (!inserted?.id) throw new Error("Failed to create project");
+  return inserted.id;
+}
 
 function countSeverities(findings: ReportFinding[]) {
   let critical = 0;
@@ -24,6 +61,43 @@ function countSeverities(findings: ReportFinding[]) {
     else low++;
   }
   return { critical, high, medium, low };
+}
+
+const now = () => new Date().toISOString();
+
+/**
+ * Insert enriched findings into the findings table (project_id, scan_id, core + Option A enrichment columns).
+ */
+async function insertFindingsRows(
+  admin: SupabaseClient,
+  projectId: string,
+  scanId: string,
+  findings: StoredFinding[]
+): Promise<void> {
+  if (findings.length === 0) return;
+  const rows = findings.map((f) => ({
+    project_id: projectId,
+    scan_id: scanId,
+    rule_id: f.checkId ?? null,
+    scanner: f.scanner ?? "semgrep",
+    file_path: f.file ?? "",
+    line: f.line ?? null,
+    title: f.title ?? "",
+    explanation: f.explanation ?? "",
+    severity: f.severity ?? "low",
+    status: "open",
+    false_positive_likelihood: null,
+    false_positive_reason: null,
+    first_seen_at: now(),
+    last_seen_at: now(),
+    resolved_at: null,
+    summary_text: f.summaryText ?? null,
+    details_text: f.detailsText ?? null,
+    fix_prompt: f.fixPrompt?.trim() || null,
+    why_it_matters: f.whyItMatters?.trim() || null,
+    fix_suggestion: f.fixSuggestion?.trim() || null,
+  }));
+  await admin.from("findings").insert(rows);
 }
 
 /**
@@ -71,11 +145,18 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+  const rawProjectId = formData.get("project_id");
   const rawProjectName = formData.get("project_name");
   const projectName =
     typeof rawProjectName === "string" && rawProjectName.trim()
       ? rawProjectName.trim()
       : `${user.email ?? "User"} — ${new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+  const projectId = await getOrCreateProjectId(
+    admin,
+    user.id,
+    rawProjectId as string | null,
+    projectName
+  );
   const rawNotes = formData.get("notes");
   const notes = typeof rawNotes === "string" && rawNotes.trim() ? rawNotes.trim() : null;
   const buf = Buffer.from(await file.arrayBuffer());
@@ -111,17 +192,29 @@ export async function POST(request: NextRequest) {
       }
       (data as Record<string, unknown>).report = findings;
       const { critical, high, medium, low } = countSeverities(findings);
-      await admin.from("scans").insert({
-        user_id: user.id,
-        project_name: projectName,
-        notes,
-        findings: findings as unknown as Record<string, unknown>[],
-        finding_count: findings.length,
-        critical_count: critical,
-        high_count: high,
-        medium_count: medium,
-        low_count: low,
-      });
+      const { data: insertedScan, error: insertError } = await admin
+        .from("scans")
+        .insert({
+          user_id: user.id,
+          project_id: projectId,
+          project_name: projectName,
+          notes,
+          findings: findings as unknown as Record<string, unknown>[],
+          finding_count: findings.length,
+          critical_count: critical,
+          high_count: high,
+          medium_count: medium,
+          low_count: low,
+        })
+        .select("id")
+        .single();
+      if (insertError || !insertedScan?.id) {
+        return NextResponse.json(
+          { error: "Failed to save scan", detail: insertError?.message },
+          { status: 500 }
+        );
+      }
+      await insertFindingsRows(admin, projectId, insertedScan.id, findings as StoredFinding[]);
       return NextResponse.json(data, { status: res.status });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -199,17 +292,29 @@ export async function POST(request: NextRequest) {
     }
     response.report = findings;
     const { critical, high, medium, low } = countSeverities(findings);
-    await admin.from("scans").insert({
-      user_id: user.id,
-      project_name: projectName,
-      notes,
-      findings: findings as unknown as Record<string, unknown>[],
-      finding_count: findings.length,
-      critical_count: critical,
-      high_count: high,
-      medium_count: medium,
-      low_count: low,
-    });
+    const { data: insertedScan, error: insertError } = await admin
+      .from("scans")
+      .insert({
+        user_id: user.id,
+        project_id: projectId,
+        project_name: projectName,
+        notes,
+        findings: findings as unknown as Record<string, unknown>[],
+        finding_count: findings.length,
+        critical_count: critical,
+        high_count: high,
+        medium_count: medium,
+        low_count: low,
+      })
+      .select("id")
+      .single();
+    if (insertError || !insertedScan?.id) {
+      return NextResponse.json(
+        { error: "Failed to save scan", detail: insertError?.message },
+        { status: 500 }
+      );
+    }
+    await insertFindingsRows(admin, projectId, insertedScan.id, findings as StoredFinding[]);
     return NextResponse.json(response);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

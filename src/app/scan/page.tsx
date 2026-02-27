@@ -7,9 +7,9 @@ import { buildReport, type ReportFinding } from "@/lib/semgrep-report";
 import { createClient } from "@/lib/supabase/client";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
+import CopyFixPromptButton, { FixPromptDisclaimer } from "@/components/ui/CopyFixPromptButton";
 
 function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
-  const [copied, setCopied] = useState(false);
   const severityColors: Record<string, string> = {
     critical: "#b91c1c",
     high: "var(--danger)",
@@ -19,16 +19,6 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
   };
   const color = severityColors[f.severity] ?? "var(--text-muted)";
   const scannerLabel = f.scanner === "gitleaks" ? "Gitleaks" : "Semgrep";
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(f.fixPrompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // ignore
-    }
-  }
 
   return (
     <section
@@ -99,22 +89,10 @@ function FindingCard({ f, index }: { f: ReportFinding; index: number }) {
       >
         {f.fixPrompt}
       </div>
-      <button
-        type="button"
-        onClick={handleCopy}
-        style={{
-          padding: "0.5rem 0.75rem",
-          fontSize: "0.875rem",
-          fontWeight: 500,
-          color: "var(--brand)",
-          background: "transparent",
-          border: "1px solid var(--brand)",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
-      >
-        {copied ? "Copied!" : "Copy prompt for AI tool"}
-      </button>
+      <FixPromptDisclaimer />
+      <div style={{ marginTop: "0.75rem" }}>
+        <CopyFixPromptButton fixPrompt={f.fixPrompt} />
+      </div>
     </section>
   );
 }

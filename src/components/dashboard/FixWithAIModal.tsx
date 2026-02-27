@@ -1,6 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { FixPromptDisclaimer } from "@/components/ui/CopyFixPromptButton";
+
+const POPOVER_TEXT =
+  "How to use this safely: 1) Open your AI tool in chat or conversation mode, 2) Paste the prompt, 3) Review suggestions before applying any changes, 4) Ask follow-up questions if anything is unclear. Tip: Avoid agent or auto-apply mode until you have reviewed the suggested changes.";
 
 type Props = {
   open: boolean;
@@ -11,12 +15,41 @@ type Props = {
 
 export default function FixWithAIModal({ open, prompt, onCopy, onClose }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showPopover, setShowPopover] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (open && textareaRef.current) {
       textareaRef.current.select();
     }
+    if (!open) {
+      setShowPopover(false);
+      setCopied(false);
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (copied) {
+      const t = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [copied]);
+
+  function handleCopyClick() {
+    if (showPopover) return;
+    setShowPopover(true);
+  }
+
+  function handleGotIt() {
+    setShowPopover(false);
+    try {
+      navigator.clipboard.writeText(prompt);
+      setCopied(true);
+    } catch {
+      // ignore
+    }
+    onCopy();
+  }
 
   if (!open) return null;
 
@@ -73,7 +106,7 @@ export default function FixWithAIModal({ open, prompt, onCopy, onClose }: Props)
           style={{
             width: "100%",
             padding: "0.75rem",
-            marginBottom: "1.25rem",
+            marginBottom: "0.5rem",
             fontSize: "0.8125rem",
             fontFamily: "ui-monospace, monospace",
             border: "1px solid var(--border)",
@@ -83,7 +116,48 @@ export default function FixWithAIModal({ open, prompt, onCopy, onClose }: Props)
             resize: "vertical",
           }}
         />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+        <FixPromptDisclaimer />
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "1.25rem", position: "relative", flexWrap: "wrap" }}>
+          {showPopover && (
+            <div
+              role="dialog"
+              aria-label="How to use this safely"
+              style={{
+                position: "absolute",
+                bottom: "100%",
+                right: 0,
+                marginBottom: "0.5rem",
+                width: "min(320px, 100%)",
+                padding: "1rem",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                fontSize: "0.8125rem",
+                lineHeight: 1.5,
+                color: "var(--text)",
+                zIndex: 10,
+              }}
+            >
+              <p style={{ margin: "0 0 0.75rem" }}>{POPOVER_TEXT}</p>
+              <button
+                type="button"
+                onClick={handleGotIt}
+                style={{
+                  padding: "0.4rem 0.75rem",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  background: "var(--brand)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                Got it
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -102,9 +176,7 @@ export default function FixWithAIModal({ open, prompt, onCopy, onClose }: Props)
           </button>
           <button
             type="button"
-            onClick={() => {
-              onCopy();
-            }}
+            onClick={handleCopyClick}
             style={{
               padding: "0.5rem 1rem",
               fontSize: "0.875rem",
@@ -116,7 +188,7 @@ export default function FixWithAIModal({ open, prompt, onCopy, onClose }: Props)
               cursor: "pointer",
             }}
           >
-            Copy prompt
+            {copied ? "Copied!" : "Help your AI fix this"}
           </button>
         </div>
       </div>

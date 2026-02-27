@@ -129,7 +129,7 @@ function normalizeSeverity(s: string | undefined): ReportFinding["severity"] {
   return "info";
 }
 
-/** Build a copyable prompt for pasting into Lovable, Cursor, or another AI coding tool. */
+/** Build an advisory prompt for pasting into an AI coding tool (collaborative, not prescriptive). */
 function buildFixPrompt(f: {
   file: string;
   line: number | null;
@@ -142,13 +142,17 @@ function buildFixPrompt(f: {
     f.line != null ? `${f.file} at line ${f.line}` : `${f.file} (see report for location)`;
   const explanationTrimmed =
     f.explanation.length > 400 ? f.explanation.slice(0, 397) + "..." : f.explanation;
-  return `Fix this security issue in ${location}:
+  return `I'm reviewing a security finding in my codebase and would like your help understanding my options.
 
-Issue: ${f.title}
-Explanation: ${explanationTrimmed}
-Why it matters: ${f.whyItMatters}
+What was found: ${explanationTrimmed}
 
-Please fix it: ${f.fixSuggestion}`;
+File and location: ${location}
+
+Security context: ${f.whyItMatters}
+
+What a secure solution should achieve: ${f.fixSuggestion}
+
+Before making any changes, please: 1) Explain what you think is causing this issue in my specific code, 2) Suggest 2-3 possible approaches to fix it, 3) Tell me if any approach might affect other parts of my app, 4) Wait for my confirmation before making any changes.`;
 }
 
 /** Unified finding from scan-service (semgrep or gitleaks normalized). */

@@ -316,7 +316,7 @@ export default function FindingCard({
                 cursor: "pointer",
               }}
             >
-              Fix with AI
+              Help your AI fix this
             </button>
             <select
               value={status}
@@ -532,7 +532,7 @@ export default function FindingCard({
           </p>
           <p
             style={{
-              margin: "0 0 0.75rem",
+              margin: "0 0 0.5rem",
               whiteSpace: "pre-wrap",
               fontFamily: "ui-monospace, monospace",
               fontSize: "0.8125rem",
@@ -540,7 +540,10 @@ export default function FindingCard({
           >
             {finding.fixSuggestion ||
               finding.fixPrompt ||
-              "Use Fix with AI to generate a fix."}
+              "Use Help your AI fix this to generate a fix."}
+          </p>
+          <p style={{ margin: "0 0 0.75rem", fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+            Fix suggestions are for review purposes. Always verify changes before applying them to your codebase.
           </p>
           <p style={{ margin: 0, fontWeight: 600, color: "var(--text)" }}>
             Location

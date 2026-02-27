@@ -100,7 +100,16 @@ async function batchLlmSummaries(
     })
     .join("\n\n");
 
-  const prompt = `You are helping developers fix security issues. For each finding below, provide a short plain-English summary (1-2 sentences, no jargon) and a copy-paste fix prompt for an AI coding tool.
+  const prompt = `You are helping developers understand and address security issues in a collaborative way. For each finding below, provide:
+1) A short plain-English summary (1-2 sentences, no jargon) for "summaryText".
+2) A "fixPrompt" that the developer will paste into an AI coding tool. The fixPrompt must be advisory, not prescriptive. Use this exact structure (plain English):
+
+- Opening: "I'm reviewing a security finding in my codebase and would like your help understanding my options."
+- What was found: plain English description of the issue
+- File and location: file name and line number
+- Security context: what attack or risk this enables, written from a security expert perspective
+- What a secure solution should achieve: the outcome (what should be true after a fix), not specific code
+- Close with these instructions to the AI: "Before making any changes, please: 1) Explain what you think is causing this issue in my specific code, 2) Suggest 2-3 possible approaches to fix it, 3) Tell me if any approach might affect other parts of my app, 4) Wait for my confirmation before making any changes."
 
 Findings (index is the number in brackets):
 
@@ -109,7 +118,7 @@ ${list}
 Respond with ONLY a valid JSON array. One object per finding, in the same order as above. Each object must have:
 - "index" (number): the finding index from the list
 - "summaryText" (string): short plain-English summary for the card
-- "fixPrompt" (string): actionable fix prompt for the developer
+- "fixPrompt" (string): the advisory prompt in the structure above (opening, what was found, file/location, security context, what secure solution should achieve, closing instructions)
 
 Example: [{"index":0,"summaryText":"...","fixPrompt":"..."}]
 No markdown, no explanation.`;

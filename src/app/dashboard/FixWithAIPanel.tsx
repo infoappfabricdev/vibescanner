@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { FixPromptDisclaimer } from "@/components/ui/CopyFixPromptButton";
+
+const POPOVER_TEXT =
+  "How to use this safely: 1) Open your AI tool in chat or conversation mode, 2) Paste the prompt, 3) Review suggestions before applying any changes, 4) Ask follow-up questions if anything is unclear. Tip: Avoid agent or auto-apply mode until you have reviewed the suggested changes.";
 
 function buildFixPrompt(
   title: string,
@@ -47,15 +51,26 @@ export default function FixWithAIPanel({
   codeSnippet,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [showCopyPopover, setShowCopyPopover] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
   const promptText = buildFixPrompt(title, file, line, explanation, fixPrompt);
 
-  function handleCopyPrompt() {
-    navigator.clipboard.writeText(promptText);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2000);
+  function handleCopyPromptClick() {
+    if (showCopyPopover) return;
+    setShowCopyPopover(true);
+  }
+
+  function handleCopyGotIt() {
+    setShowCopyPopover(false);
+    try {
+      navigator.clipboard.writeText(promptText);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch {
+      // ignore
+    }
   }
 
   function handleCopyCode() {
@@ -206,7 +221,7 @@ export default function FixWithAIPanel({
             </section>
           )}
 
-          <section>
+          <section style={{ position: "relative" }}>
             <h5
               style={{
                 margin: "0 0 0.5rem",
@@ -221,7 +236,7 @@ export default function FixWithAIPanel({
             </h5>
             <pre
               style={{
-                margin: "0 0 0.75rem",
+                margin: "0 0 0.5rem",
                 padding: "1rem 1.25rem",
                 background: "#fff",
                 border: "1px solid var(--border)",
@@ -237,9 +252,50 @@ export default function FixWithAIPanel({
             >
               {promptText}
             </pre>
+            <FixPromptDisclaimer />
+            {showCopyPopover && (
+              <div
+                role="dialog"
+                aria-label="How to use this safely"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  marginTop: "0.5rem",
+                  width: "min(320px, 100%)",
+                  padding: "1rem",
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.5,
+                  color: "var(--text)",
+                  zIndex: 10,
+                }}
+              >
+                <p style={{ margin: "0 0 0.75rem" }}>{POPOVER_TEXT}</p>
+                <button
+                  type="button"
+                  onClick={handleCopyGotIt}
+                  style={{
+                    padding: "0.4rem 0.75rem",
+                    fontSize: "0.8125rem",
+                    fontWeight: 500,
+                    background: "var(--brand)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Got it
+                </button>
+              </div>
+            )}
             <button
               type="button"
-              onClick={handleCopyPrompt}
+              onClick={handleCopyPromptClick}
               style={{
                 padding: "0.5rem 1rem",
                 fontSize: "0.8125rem",
@@ -249,9 +305,10 @@ export default function FixWithAIPanel({
                 border: "none",
                 borderRadius: "6px",
                 cursor: "pointer",
+                marginTop: "0.5rem",
               }}
             >
-              {copiedPrompt ? "Copied!" : "Copy prompt"}
+              {copiedPrompt ? "Copied!" : "Help your AI fix this"}
             </button>
           </section>
         </div>

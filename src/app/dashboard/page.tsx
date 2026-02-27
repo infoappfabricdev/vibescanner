@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import { ButtonPrimary, ButtonSecondary } from "@/components/ui/Button";
-import DashboardClient from "./DashboardClient";
+import DashboardClient from "@/app/dashboard/DashboardClient";
 import TopIssuesSection from "./TopIssuesSection";
 import { mapReportFindingsToNormalized, type StoredFinding } from "./types";
 
