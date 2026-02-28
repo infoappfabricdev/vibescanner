@@ -15,50 +15,50 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ scanId: string }> }
 ) {
-  const { scanId } = await context.params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: scan, error: scanError } = await supabase
-    .from("scans")
-    .select(
-      "id, created_at, project_name, notes, finding_count, critical_count, high_count, medium_count, low_count, findings"
-    )
-    .eq("id", scanId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (scanError || !scan) {
-    return NextResponse.json({ error: "Scan not found" }, { status: 404 });
-  }
-
-  const { data: findingsRows } = await supabase
-    .from("findings")
-    .select(
-      "id, project_id, scan_id, rule_id, scanner, file_path, line, title, explanation, severity, status, false_positive_likelihood, false_positive_reason, first_seen_at, last_seen_at, resolved_at, summary_text, details_text, fix_prompt, why_it_matters, fix_suggestion"
-    )
-    .eq("scan_id", scanId)
-    .order("first_seen_at", { ascending: true });
-
-  const findings =
-    findingsRows != null && findingsRows.length > 0
-      ? findingsRowsToStoredFindings(findingsRows as FindingRow[])
-      : ((scan.findings ?? []) as ReportFinding[]).map((f) => ({
-          ...f,
-          summaryText: undefined,
-          detailsText: undefined,
-          false_positive_likelihood: undefined,
-          false_positive_reason: undefined,
-        }));
-
   try {
+    const { scanId } = await context.params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: scan, error: scanError } = await supabase
+      .from("scans")
+      .select(
+        "id, created_at, project_name, notes, finding_count, critical_count, high_count, medium_count, low_count, findings"
+      )
+      .eq("id", scanId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (scanError || !scan) {
+      return NextResponse.json({ error: "Scan not found" }, { status: 404 });
+    }
+
+    const { data: findingsRows } = await supabase
+      .from("findings")
+      .select(
+        "id, project_id, scan_id, rule_id, scanner, file_path, line, title, explanation, severity, status, false_positive_likelihood, false_positive_reason, first_seen_at, last_seen_at, resolved_at, summary_text, details_text, fix_prompt, why_it_matters, fix_suggestion"
+      )
+      .eq("scan_id", scanId)
+      .order("first_seen_at", { ascending: true });
+
+    const findings =
+      findingsRows != null && findingsRows.length > 0
+        ? findingsRowsToStoredFindings(findingsRows as FindingRow[])
+        : ((scan.findings ?? []) as ReportFinding[]).map((f) => ({
+            ...f,
+            summaryText: undefined,
+            detailsText: undefined,
+            false_positive_likelihood: undefined,
+            false_positive_reason: undefined,
+          }));
+
     const { renderToStream } = await import("@react-pdf/renderer");
     const doc = React.createElement(ScanReportDocument, {
       scan: {
@@ -90,7 +90,11 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("PDF generation failed:", err);
+    console.error("[GET /api/scan-report-pdf] error:", err);
+    if (err instanceof Error) {
+      console.error("[GET /api/scan-report-pdf] message:", err.message);
+      console.error("[GET /api/scan-report-pdf] stack:", err.stack);
+    }
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 }
