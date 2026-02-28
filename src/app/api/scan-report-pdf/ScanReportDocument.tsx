@@ -222,13 +222,16 @@ export function ScanReportDocument({ scan, findings }: ScanReportDocumentProps) 
     scan.low_count
   );
   const projectName =
-    (scan.project_name && scan.project_name.trim()) || "Unnamed project";
-  const scanDate = new Date(scan.created_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+    (scan.project_name && String(scan.project_name).trim()) || "Unnamed project";
+  const scanDate = String(
+    new Date(scan.created_at).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
+  );
   const hasNotes =
     typeof scan.notes === "string" && scan.notes.trim().length > 0;
+  const notesText = String(scan.notes ?? "").trim();
 
   const findingChunks: StoredFinding[][] = [];
   for (let i = 0; i < findings.length; i += FINDINGS_PER_PAGE) {
@@ -260,36 +263,36 @@ export function ScanReportDocument({ scan, findings }: ScanReportDocumentProps) 
           <Text style={styles.meta}>{scanDate}</Text>
           {hasNotes && (
             <View style={styles.notesWrap}>
-              <Text style={styles.notesText}>{scan.notes!.trim()}</Text>
+              <Text style={styles.notesText}>{notesText}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.scoreSection}>
-          <Text style={styles.scoreValue}>{score}/100</Text>
+          <Text style={styles.scoreValue}>{String(score)}/100</Text>
           <Text style={styles.scoreLabel}>Security score</Text>
         </View>
 
         <View style={styles.summaryTable}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryCellBold}>Total findings</Text>
-            <Text style={styles.summaryCell}>{scan.finding_count}</Text>
+            <Text style={styles.summaryCell}>{String(scan.finding_count ?? 0)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryCell}>Critical</Text>
-            <Text style={styles.summaryCell}>{critical}</Text>
+            <Text style={styles.summaryCell}>{String(critical)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryCell}>High</Text>
-            <Text style={styles.summaryCell}>{scan.high_count}</Text>
+            <Text style={styles.summaryCell}>{String(scan.high_count ?? 0)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryCell}>Medium</Text>
-            <Text style={styles.summaryCell}>{scan.medium_count}</Text>
+            <Text style={styles.summaryCell}>{String(scan.medium_count ?? 0)}</Text>
           </View>
           <View style={styles.summaryRowLast}>
             <Text style={styles.summaryCell}>Low</Text>
-            <Text style={styles.summaryCell}>{scan.low_count}</Text>
+            <Text style={styles.summaryCell}>{String(scan.low_count ?? 0)}</Text>
           </View>
         </View>
 
@@ -346,34 +349,34 @@ function FindingBlock({ finding }: { finding: StoredFinding }) {
       ]}
     >
       <View style={styles.findingMeta}>
-        <Text style={severityStyle}>{sev}</Text>
-        <Text style={styles.scannerTag}>{scannerLabel}</Text>
+        <Text style={severityStyle}>{String(sev)}</Text>
+        <Text style={styles.scannerTag}>{String(scannerLabel)}</Text>
         <Text style={styles.findingFile}>
-          {finding.file}
-          {finding.line != null ? ` (line ${finding.line})` : ""}
+          {String(finding.file ?? "")}
+          {finding.line != null ? ` (line ${String(finding.line)})` : ""}
         </Text>
       </View>
-      <Text style={styles.findingTitle}>{finding.title}</Text>
-      <Text style={styles.findingText}>{finding.explanation}</Text>
-      {finding.whyItMatters && finding.whyItMatters.trim() && (
+      <Text style={styles.findingTitle}>{String(finding.title ?? "")}</Text>
+      <Text style={styles.findingText}>{String(finding.explanation ?? "")}</Text>
+      {finding.whyItMatters != null && String(finding.whyItMatters).trim() && (
         <Text style={styles.findingText}>
           <Text style={{ fontWeight: "bold" }}>Why it matters: </Text>
-          {finding.whyItMatters.trim()}
+          {String(finding.whyItMatters).trim()}
         </Text>
       )}
       {finding.false_positive_likelihood === "likely_fp" && (
         <View>
           <Text style={styles.fpBadge}>Likely false positive</Text>
-          {finding.false_positive_reason && (
-            <Text style={styles.fpReason}>{finding.false_positive_reason}</Text>
+          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() && (
+            <Text style={styles.fpReason}>{String(finding.false_positive_reason)}</Text>
           )}
         </View>
       )}
       {finding.false_positive_likelihood === "possible_fp" && (
         <View>
           <Text style={styles.fpBadge}>Possibly false positive</Text>
-          {finding.false_positive_reason && (
-            <Text style={styles.fpReason}>{finding.false_positive_reason}</Text>
+          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() && (
+            <Text style={styles.fpReason}>{String(finding.false_positive_reason)}</Text>
           )}
         </View>
       )}
