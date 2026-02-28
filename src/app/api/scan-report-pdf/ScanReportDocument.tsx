@@ -261,11 +261,11 @@ export function ScanReportDocument({ scan, findings }: ScanReportDocumentProps) 
           <Text style={styles.reportTitle}>Security Scan Report</Text>
           <Text style={styles.meta}>{projectName}</Text>
           <Text style={styles.meta}>{scanDate}</Text>
-          {hasNotes && (
+          {hasNotes ? (
             <View style={styles.notesWrap}>
               <Text style={styles.notesText}>{notesText}</Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         <View style={styles.scoreSection}>
@@ -358,28 +358,27 @@ function FindingBlock({ finding }: { finding: StoredFinding }) {
       </View>
       <Text style={styles.findingTitle}>{String(finding.title ?? "")}</Text>
       <Text style={styles.findingText}>{String(finding.explanation ?? "")}</Text>
-      {finding.whyItMatters != null && String(finding.whyItMatters).trim() && (
+      {finding.whyItMatters != null && String(finding.whyItMatters).trim() ? (
         <Text style={styles.findingText}>
-          <Text style={{ fontWeight: "bold" }}>Why it matters: </Text>
-          {String(finding.whyItMatters).trim()}
+          {"Why it matters: " + String(finding.whyItMatters).trim()}
         </Text>
-      )}
-      {finding.false_positive_likelihood === "likely_fp" && (
+      ) : null}
+      {finding.false_positive_likelihood === "likely_fp" ? (
         <View>
           <Text style={styles.fpBadge}>Likely false positive</Text>
-          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() && (
+          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() ? (
             <Text style={styles.fpReason}>{String(finding.false_positive_reason)}</Text>
-          )}
+          ) : null}
         </View>
-      )}
-      {finding.false_positive_likelihood === "possible_fp" && (
+      ) : null}
+      {finding.false_positive_likelihood === "possible_fp" ? (
         <View>
           <Text style={styles.fpBadge}>Possibly false positive</Text>
-          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() && (
+          {finding.false_positive_reason != null && String(finding.false_positive_reason).trim() ? (
             <Text style={styles.fpReason}>{String(finding.false_positive_reason)}</Text>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
