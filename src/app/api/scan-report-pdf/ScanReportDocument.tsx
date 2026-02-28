@@ -5,7 +5,6 @@ import {
   View,
   Text,
   StyleSheet,
-  type ReactPDFStyles,
 } from "@react-pdf/renderer";
 import type { StoredFinding } from "@/app/dashboard/types";
 
@@ -333,7 +332,7 @@ function FindingBlock({ finding }: { finding: StoredFinding }) {
   const borderColor = isFp ? COLORS.falsePositive : color;
   const scannerLabel = finding.scanner === "gitleaks" ? "Gitleaks" : "Semgrep";
 
-  const severityStyle: ReactPDFStyles[string] = {
+  const severityStyle = {
     ...styles.severityBadge,
     backgroundColor: isFp ? "rgba(37, 99, 235, 0.15)" : color,
     color: isFp ? COLORS.falsePositive : "#fff",
