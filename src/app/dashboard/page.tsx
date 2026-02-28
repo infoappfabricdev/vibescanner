@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import { ButtonPrimary, ButtonSecondary } from "@/components/ui/Button";
 import DashboardClient from "@/app/dashboard/DashboardClient";
 import TopIssuesSection from "./TopIssuesSection";
+import DownloadReportLink from "./DownloadReportLink";
 import { mapReportFindingsToNormalized, findingsRowsToStoredFindings, type StoredFinding, type FindingRow } from "./types";
 
 type ScanRow = {
@@ -584,12 +585,16 @@ export default async function DashboardPage() {
                         <StatusPill {...status} />
                         <span
                           style={{
+                            display: "flex",
+                            gap: "0.5rem",
+                            alignItems: "center",
                             fontSize: "0.875rem",
                             fontWeight: 500,
                             color: "var(--brand)",
                           }}
                         >
-                          View report
+                          <span>View report</span>
+                          <DownloadReportLink scanId={s.id} />
                         </span>
                       </Link>
                     </li>

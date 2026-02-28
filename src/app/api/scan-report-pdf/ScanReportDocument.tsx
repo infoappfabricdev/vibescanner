@@ -1,0 +1,383 @@
+import React from "react";
+import {
+  Document,
+  Page,
+  View,
+  Text,
+  StyleSheet,
+  type ReactPDFStyles,
+} from "@react-pdf/renderer";
+import type { StoredFinding } from "@/app/dashboard/types";
+
+const COLORS = {
+  critical: "#b91c1c",
+  high: "#dc2626",
+  medium: "#d97706",
+  low: "#16a34a",
+  falsePositive: "#2563eb",
+  text: "#1f2937",
+  textMuted: "#6b7280",
+  border: "#e5e7eb",
+} as const;
+
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: 40,
+    paddingBottom: 50,
+    paddingHorizontal: 40,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+  },
+  header: {
+    marginBottom: 20,
+  },
+  /** Used for text logo; see TODO(logo) in JSX to replace with Image. */
+  logo: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  reportTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  meta: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginBottom: 2,
+  },
+  notesWrap: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: "#f9fafb",
+    borderRadius: 4,
+  },
+  notesText: {
+    fontSize: 10,
+    color: COLORS.text,
+  },
+  scoreSection: {
+    marginTop: 16,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 6,
+  },
+  scoreValue: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: COLORS.text,
+  },
+  scoreLabel: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  summaryTable: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    padding: 8,
+  },
+  summaryRowLast: {
+    flexDirection: "row",
+    padding: 8,
+  },
+  summaryCell: {
+    flex: 1,
+    fontSize: 10,
+    color: COLORS.text,
+  },
+  summaryCellBold: {
+    flex: 1,
+    fontSize: 10,
+    fontWeight: "bold",
+    color: COLORS.text,
+  },
+  findingSection: {
+    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    borderLeftWidth: 4,
+  },
+  findingMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 6,
+    alignItems: "center",
+  },
+  severityBadge: {
+    fontSize: 8,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  scannerTag: {
+    fontSize: 8,
+    color: COLORS.textMuted,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 2,
+  },
+  findingTitle: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  findingFile: {
+    fontSize: 9,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  findingText: {
+    fontSize: 10,
+    color: COLORS.text,
+    lineHeight: 1.5,
+    marginBottom: 6,
+  },
+  fpBadge: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: COLORS.falsePositive,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  fpReason: {
+    fontSize: 9,
+    color: COLORS.textMuted,
+    lineHeight: 1.4,
+  },
+  footer: {
+    position: "absolute",
+    bottom: 20,
+    left: 40,
+    right: 40,
+    fontSize: 8,
+    color: COLORS.textMuted,
+    textAlign: "center",
+  },
+  noFindings: {
+    fontSize: 12,
+    color: COLORS.low,
+    fontWeight: "bold",
+    marginTop: 12,
+  },
+});
+
+function securityScore(
+  critical: number,
+  high: number,
+  medium: number,
+  low: number
+): number {
+  const s =
+    100 -
+    40 * (critical ?? 0) -
+    25 * high -
+    10 * medium -
+    3 * low;
+  return Math.max(0, Math.min(100, s));
+}
+
+export type ScanForPdf = {
+  project_name?: string | null;
+  created_at: string;
+  notes?: string | null;
+  finding_count: number;
+  critical_count?: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+};
+
+type ScanReportDocumentProps = {
+  scan: ScanForPdf;
+  findings: StoredFinding[];
+};
+
+const FINDINGS_PER_PAGE = 4;
+
+export function ScanReportDocument({ scan, findings }: ScanReportDocumentProps) {
+  const critical = scan.critical_count ?? 0;
+  const score = securityScore(
+    critical,
+    scan.high_count,
+    scan.medium_count,
+    scan.low_count
+  );
+  const projectName =
+    (scan.project_name && scan.project_name.trim()) || "Unnamed project";
+  const scanDate = new Date(scan.created_at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const hasNotes =
+    typeof scan.notes === "string" && scan.notes.trim().length > 0;
+
+  const findingChunks: StoredFinding[][] = [];
+  for (let i = 0; i < findings.length; i += FINDINGS_PER_PAGE) {
+    findingChunks.push(findings.slice(i, i + FINDINGS_PER_PAGE));
+  }
+  if (findingChunks.length === 0 && findings.length === 0) {
+    findingChunks.push([]);
+  }
+
+  const footerEl = (
+    <Text
+      fixed
+      style={styles.footer}
+      render={({ pageNumber, totalPages }) =>
+        `Generated by VibeScan — vibescan.co · Page ${pageNumber} of ${totalPages}`
+      }
+    />
+  );
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          {/* TODO(logo): Replace the "VibeScan" text below with a real logo image when available.
+              Use: <Image src="/path/to/vibescan-logo.png" style={{ width: 120, height: 32 }} /> */}
+          <Text style={styles.logo}>VibeScan</Text>
+          <Text style={styles.reportTitle}>Security Scan Report</Text>
+          <Text style={styles.meta}>{projectName}</Text>
+          <Text style={styles.meta}>{scanDate}</Text>
+          {hasNotes && (
+            <View style={styles.notesWrap}>
+              <Text style={styles.notesText}>{scan.notes!.trim()}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.scoreSection}>
+          <Text style={styles.scoreValue}>{score}/100</Text>
+          <Text style={styles.scoreLabel}>Security score</Text>
+        </View>
+
+        <View style={styles.summaryTable}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryCellBold}>Total findings</Text>
+            <Text style={styles.summaryCell}>{scan.finding_count}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryCell}>Critical</Text>
+            <Text style={styles.summaryCell}>{critical}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryCell}>High</Text>
+            <Text style={styles.summaryCell}>{scan.high_count}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryCell}>Medium</Text>
+            <Text style={styles.summaryCell}>{scan.medium_count}</Text>
+          </View>
+          <View style={styles.summaryRowLast}>
+            <Text style={styles.summaryCell}>Low</Text>
+            <Text style={styles.summaryCell}>{scan.low_count}</Text>
+          </View>
+        </View>
+
+        {findings.length === 0 ? (
+          <Text style={styles.noFindings}>
+            No security issues were found in this scan.
+          </Text>
+        ) : (
+          findingChunks[0]!.map((f, i) => <FindingBlock key={i} finding={f} />)
+        )}
+
+        {footerEl}
+      </Page>
+
+      {findingChunks.slice(1).map((chunk, chunkIdx) => (
+        <Page key={chunkIdx} size="A4" style={styles.page}>
+          {chunk.map((f, i) => (
+            <FindingBlock key={i} finding={f} />
+          ))}
+          {footerEl}
+        </Page>
+      ))}
+    </Document>
+  );
+}
+
+function FindingBlock({ finding }: { finding: StoredFinding }) {
+  const sev = finding.severity === "info" ? "low" : finding.severity;
+  const color =
+    sev === "critical"
+      ? COLORS.critical
+      : sev === "high"
+        ? COLORS.high
+        : sev === "medium"
+          ? COLORS.medium
+          : COLORS.low;
+  const isFp =
+    finding.false_positive_likelihood === "likely_fp" ||
+    finding.false_positive_likelihood === "possible_fp";
+  const borderColor = isFp ? COLORS.falsePositive : color;
+  const scannerLabel = finding.scanner === "gitleaks" ? "Gitleaks" : "Semgrep";
+
+  const severityStyle: ReactPDFStyles[string] = {
+    ...styles.severityBadge,
+    backgroundColor: isFp ? "rgba(37, 99, 235, 0.15)" : color,
+    color: isFp ? COLORS.falsePositive : "#fff",
+  };
+
+  return (
+    <View
+      style={[
+        styles.findingSection,
+        { borderLeftColor: borderColor },
+      ]}
+    >
+      <View style={styles.findingMeta}>
+        <Text style={severityStyle}>{sev}</Text>
+        <Text style={styles.scannerTag}>{scannerLabel}</Text>
+        <Text style={styles.findingFile}>
+          {finding.file}
+          {finding.line != null ? ` (line ${finding.line})` : ""}
+        </Text>
+      </View>
+      <Text style={styles.findingTitle}>{finding.title}</Text>
+      <Text style={styles.findingText}>{finding.explanation}</Text>
+      {finding.whyItMatters && finding.whyItMatters.trim() && (
+        <Text style={styles.findingText}>
+          <Text style={{ fontWeight: "bold" }}>Why it matters: </Text>
+          {finding.whyItMatters.trim()}
+        </Text>
+      )}
+      {finding.false_positive_likelihood === "likely_fp" && (
+        <View>
+          <Text style={styles.fpBadge}>Likely false positive</Text>
+          {finding.false_positive_reason && (
+            <Text style={styles.fpReason}>{finding.false_positive_reason}</Text>
+          )}
+        </View>
+      )}
+      {finding.false_positive_likelihood === "possible_fp" && (
+        <View>
+          <Text style={styles.fpBadge}>Possibly false positive</Text>
+          {finding.false_positive_reason && (
+            <Text style={styles.fpReason}>{finding.false_positive_reason}</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}

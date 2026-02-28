@@ -5,6 +5,7 @@ import Container from "@/components/ui/Container";
 import type { ReportFinding } from "@/lib/semgrep-report";
 import { findingsRowsToStoredFindings, type FindingRow } from "../../types";
 import ReportFindingCard from "./ReportFindingCard";
+import DownloadReportButton from "./DownloadReportButton";
 
 export default async function ScanReportPage({
   params,
@@ -75,6 +76,9 @@ export default async function ScanReportPage({
             {(scan as { notes?: string | null }).notes?.trim()}
           </p>
         )}
+        <p style={{ marginBottom: "1.5rem" }}>
+          <DownloadReportButton scanId={id} />
+        </p>
 
         {hasFindings ? (
           findings.map((f, i) => (
