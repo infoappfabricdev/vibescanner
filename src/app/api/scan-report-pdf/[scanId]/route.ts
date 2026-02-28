@@ -17,6 +17,8 @@ export async function GET(
 ) {
   try {
     const { scanId } = await context.params;
+    console.error("[scan-report-pdf] step: params resolved, scanId=", scanId);
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -26,6 +28,7 @@ export async function GET(
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    console.error("[scan-report-pdf] step: auth ok, userId=", user.id);
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
@@ -37,8 +40,10 @@ export async function GET(
       .maybeSingle();
 
     if (scanError || !scan) {
+      console.error("[scan-report-pdf] step: scan not found, error=", scanError?.message);
       return NextResponse.json({ error: "Scan not found" }, { status: 404 });
     }
+    console.error("[scan-report-pdf] step: scan loaded, project_name=", scan.project_name ?? "(null)");
 
     const { data: findingsRows } = await supabase
       .from("findings")
@@ -58,8 +63,8 @@ export async function GET(
             false_positive_likelihood: undefined,
             false_positive_reason: undefined,
           }));
+    console.error("[scan-report-pdf] step: findings loaded, count=", findings.length);
 
-    const { renderToStream } = await import("@react-pdf/renderer");
     const doc = React.createElement(ScanReportDocument, {
       scan: {
         project_name: scan.project_name,
@@ -73,15 +78,49 @@ export async function GET(
       },
       findings,
     });
-    // ScanReportDocument renders <Document> at root; cast satisfies renderToStream's DocumentProps expectation
-    const stream = await renderToStream(doc as React.ReactElement);
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-      stream.on("end", () => resolve(Buffer.concat(chunks)));
-      stream.on("error", reject);
-    });
 
+    let buffer: Buffer;
+    const pdfModule = await import("@react-pdf/renderer");
+    const { renderToBuffer, renderToStream } = pdfModule as typeof pdfModule & {
+      renderToBuffer?: (el: React.ReactElement) => Promise<Buffer>;
+    };
+
+    if (typeof renderToBuffer === "function") {
+      console.error("[scan-report-pdf] step: using renderToBuffer");
+      try {
+        buffer = await renderToBuffer(doc as React.ReactElement);
+        console.error("[scan-report-pdf] step: renderToBuffer done, buffer length=", buffer.length);
+      } catch (renderErr) {
+        console.error("[scan-report-pdf] renderToBuffer failed:", renderErr);
+        if (renderErr instanceof Error) console.error("[scan-report-pdf] renderToBuffer stack:", renderErr.stack);
+        throw renderErr;
+      }
+    } else {
+      console.error("[scan-report-pdf] step: using renderToStream (renderToBuffer not available)");
+      try {
+        const stream = await renderToStream(doc as React.ReactElement);
+        console.error("[scan-report-pdf] step: renderToStream returned");
+        buffer = await new Promise<Buffer>((resolve, reject) => {
+          const chunks: Buffer[] = [];
+          stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+          stream.on("end", () => {
+            console.error("[scan-report-pdf] step: stream end, chunks=", chunks.length);
+            resolve(Buffer.concat(chunks));
+          });
+          stream.on("error", (err: Error) => {
+            console.error("[scan-report-pdf] stream error:", err);
+            reject(err);
+          });
+        });
+        console.error("[scan-report-pdf] step: buffer from stream, length=", buffer.length);
+      } catch (streamErr) {
+        console.error("[scan-report-pdf] renderToStream/stream failed:", streamErr);
+        if (streamErr instanceof Error) console.error("[scan-report-pdf] stream stack:", streamErr.stack);
+        throw streamErr;
+      }
+    }
+
+    console.error("[scan-report-pdf] step: returning PDF response, size=", buffer.length);
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
