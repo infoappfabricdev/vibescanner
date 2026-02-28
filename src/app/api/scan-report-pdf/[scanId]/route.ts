@@ -73,7 +73,8 @@ export async function GET(
       },
       findings,
     });
-    const stream = await renderToStream(doc);
+    // ScanReportDocument renders <Document> at root; cast satisfies renderToStream's DocumentProps expectation
+    const stream = await renderToStream(doc as React.ReactElement);
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const chunks: Buffer[] = [];
       stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
