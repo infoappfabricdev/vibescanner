@@ -5,6 +5,7 @@ import Container from "@/components/ui/Container";
 import type { ReportFinding } from "@/lib/semgrep-report";
 import { findingsRowsToStoredFindings, type FindingRow } from "../../types";
 import ReportFindingCard from "./ReportFindingCard";
+import PrintReportButton from "./PrintReportButton";
 
 export default async function ScanReportPage({
   params,
@@ -47,10 +48,13 @@ export default async function ScanReportPage({
   return (
     <main style={{ padding: "4rem 1.5rem" }}>
       <Container>
-        <p style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>
+        <p className="no-print" style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>
           <Link href="/dashboard" style={{ color: "var(--brand)", textDecoration: "none" }}>
             ← Back to dashboard
           </Link>
+        </p>
+        <p className="no-print" style={{ marginBottom: "1rem" }}>
+          <PrintReportButton />
         </p>
         <h1 style={{ margin: "0 0 0.5rem", color: "var(--text)" }}>
           {(scan as { project_name?: string | null }).project_name?.trim() ||

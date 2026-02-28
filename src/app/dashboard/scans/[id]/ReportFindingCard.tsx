@@ -157,9 +157,11 @@ export default function ReportFindingCard({
       >
         {f.fixPrompt}
       </div>
-      <FixPromptDisclaimer />
-      <div style={{ marginTop: "0.75rem" }}>
-        <CopyFixPromptButton fixPrompt={f.fixPrompt} />
+      <div className="no-print">
+        <FixPromptDisclaimer />
+        <div style={{ marginTop: "0.75rem" }}>
+          <CopyFixPromptButton fixPrompt={f.fixPrompt} />
+        </div>
       </div>
       {findingId && isPossibleOrLikelyFp && (
         <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>

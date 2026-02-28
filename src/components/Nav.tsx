@@ -40,6 +40,7 @@ export default function Nav() {
 
   return (
     <header
+      className="no-print"
       style={{
         background: "#ffffff",
         borderBottom: "1px solid #E2E8F0",
